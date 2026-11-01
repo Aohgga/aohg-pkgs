@@ -1,0 +1,88 @@
+# aohg-pkgs
+
+Aohg 的个人 Nix 包集合。nixpkgs 中没有的包（或需要自定义补丁/变体的包）
+都放在这里。
+
+## 包列表
+
+| 属性名 | 说明 | 上游 |
+|--------|------|------|
+| `maple-mono.NFPropo-CN` | Maple Mono NF CN 变体，带 Nerd Font 与比例连字 | [Aohgga/maple-font](https://github.com/Aohgga/maple-font) |
+| `bilibili-mpv` | MPV 的 B 站弹幕/评论脚本 | [itKelis/MPV-Play-BiliBili-Comments](https://github.com/itKelis/MPV-Play-BiliBili-Comments) |
+
+## 使用方法
+
+### 作为 flake input
+
+```nix
+{
+  inputs.aohg-pkgs = {
+    url = "github:Aohgga/aohg-pkgs";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
+}
+```
+
+然后直接引用包：
+
+```nix
+inputs.aohg-pkgs.packages.${pkgs.stdenv.hostPlatform.system}.bilibili-mpv
+```
+
+### 通过 overlay
+
+```nix
+{
+  inputs.aohg-pkgs = {
+    url = "github:Aohgga/aohg-pkgs";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
+}
+```
+
+应用 overlay：
+
+```nix
+nixpkgs.overlays = [ inputs.aohg-pkgs.overlays.default ];
+```
+
+之后这些包就像普通 `pkgs` 属性一样可用：
+
+```nix
+programs.mpv.scripts = [ pkgs.bilibili-mpv ];
+```
+
+### 无需安装，直接构建
+
+```bash
+nix build github:Aohgga/aohg-pkgs#bilibili-mpv
+nix build github:Aohgga/aohg-pkgs#maple-mono.NFPropo-CN
+```
+
+### 格式化
+
+```bash
+nix fmt        # 使用 nixfmt-rfc-style 格式化本仓库
+```
+
+## 各包说明
+
+### `bilibili-mpv`
+
+固定上游某个具体 commit，并把 Nix 提供的 Python 替换进脚本，
+因此无需系统 `PATH` 中存在 Python 即可运行。
+
+### `maple-mono.NFPropo-CN`
+
+Unhinted TTF 变体，安装到 `$out/share/fonts/truetype` 下。
+来自自定义字体构建。
+
+## 许可证
+
+每个包的许可证见其 `meta.license`：
+
+- `bilibili-mpv` — GPL-3.0+
+- `maple-mono.NFPropo-CN` — 见上游字体许可证
+
+本仓库中的打包代码（Nix 表达式）在未另行声明的情况下采用
+MIT 许可证。
