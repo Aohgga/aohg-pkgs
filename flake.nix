@@ -12,11 +12,15 @@
 
     mkPackages = pkgs: {
       maple-mono.NFPropo-CN = pkgs.callPackage ./maple-mono.NFPropo-CN {};
-      yaru                  = pkgs.callPackage ./yaru {};
       bilibili-mpv          = pkgs.callPackage ./bilibili-mpv {};
     };
   in {
-    overlays.default = final: _prev: mkPackages final;
+    overlays.default = final: prev: {
+      maple-mono = prev.maple-mono // {
+        NFPropo-CN = final.callPackage ./maple-mono.NFPropo-CN {};
+      };
+      bilibili-mpv = final.callPackage ./bilibili-mpv {};
+    };
 
     packages = forAllSystems (system:
       mkPackages nixpkgs.legacyPackages.${system}
