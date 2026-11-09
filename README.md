@@ -79,9 +79,14 @@ nix fmt        # 使用 nixfmt-rfc-style 格式化本仓库
 用上游的 `bundle.py`（python + fonttools）重新打包，输出与上游
 release 相同的 `scripts/material-osc.lua` 与 `fonts/`。
 
-补丁内容：MD3 暗色实心面板（去掉菜单/控件/弹窗透明度）、
-中文界面、关闭圆点缩小为 2dp、文本测量回到 Google Sans Flex、
-动画恢复 120fps。
+补丁相对上游的改动：
+
+- 配色换成 MD3 暗色：面板/菜单/控件背景 `#211F26`、文字 `#E6E0E9`、
+  次要文字 `#CAC4D0`、选中背景 `#4F378B`，强调色仍由 `accent_color` 控制。
+- 去掉菜单、控制条、时间胶囊、弹窗面板的透明度（原来有半透明叠加）。
+- 界面文案翻译为中文。
+- 关闭菜单/弹窗时收拢的终点圆点从 28dp 缩小到 2dp。
+- 修正中文全角字宽测量（2485 → 3480），避免文字溢出胶囊。
 
 ### `maple-mono.NFPropo-CN`
 
