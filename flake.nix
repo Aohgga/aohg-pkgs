@@ -13,6 +13,7 @@
     mkPackages = pkgs: {
       maple-mono.NFPropo-CN = pkgs.callPackage ./maple-mono.NFPropo-CN {};
       bilibili-mpv          = pkgs.callPackage ./bilibili-mpv {};
+      material-osc          = pkgs.callPackage ./material-osc {};
     };
   in {
     overlays.default = final: prev: {
@@ -20,6 +21,7 @@
         NFPropo-CN = final.callPackage ./maple-mono.NFPropo-CN {};
       };
       bilibili-mpv = final.callPackage ./bilibili-mpv {};
+      material-osc = final.callPackage ./material-osc {};
     };
 
     packages = forAllSystems (system:

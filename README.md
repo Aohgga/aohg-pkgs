@@ -9,6 +9,7 @@ Aohg 的个人 Nix 包集合。nixpkgs 中没有的包（或需要自定义补�
 |--------|------|------|
 | `maple-mono.NFPropo-CN` | Maple Mono NF CN 变体，带 Nerd Font 与比例连字 | [Aohgga/maple-font](https://github.com/Aohgga/maple-font) |
 | `bilibili-mpv` | MPV 的 B 站弹幕/评论脚本 | [itKelis/MPV-Play-BiliBili-Comments](https://github.com/itKelis/MPV-Play-BiliBili-Comments) |
+| `material-osc` | mpv 的 Material Design OSC，MD3E 不透明配色 + 中文界面 | [brahmkshatriya/material-osc](https://github.com/brahmkshatriya/material-osc) |
 
 ## 使用方法
 
@@ -71,6 +72,16 @@ nix fmt        # 使用 nixfmt-rfc-style 格式化本仓库
 
 固定上游某个具体 commit，并把 Nix 提供的 Python 替换进脚本，
 因此无需系统 `PATH` 中存在 Python 即可运行。
+
+### `material-osc`
+
+固定上游 `main` 的某个 commit，应用 `material-osc-md3e.patch` 后
+用上游的 `bundle.py`（python + fonttools）重新打包，输出与上游
+release 相同的 `scripts/material-osc.lua` 与 `fonts/`。
+
+补丁内容：MD3 暗色实心面板（去掉菜单/控件/弹窗透明度）、
+中文界面、关闭圆点缩小为 2dp、文本测量回到 Google Sans Flex、
+动画恢复 120fps。
 
 ### `maple-mono.NFPropo-CN`
 

@@ -1,0 +1,2823 @@
+diff -ruN a/src/core/application_state.lua b/src/core/application_state.lua
+--- a/src/core/application_state.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/core/application_state.lua	2026-11-09 20:17:45.828346307 +0800
+@@ -88,7 +88,7 @@
+       last_subtitle_id = nil, last_sub_visibility = nil,
+       ab_loop_initialized = false, last_ab_loop_a = nil,
+       last_ab_loop_b = nil,
+-      icon = "play_arrow", label = nil, label_color = "#FFFFFF",
++      icon = "play_arrow", label = nil, label_color = "#E6E0E9",
+       hide_timer = nil, pill_only = false, show_on_empty = false
+     },
+     ytdl = {
+diff -ruN a/src/main.lua b/src/main.lua
+--- a/src/main.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/main.lua	2026-11-09 21:18:46.907940470 +0800
+@@ -400,7 +400,7 @@
+         local progress = ui.clamp(
+           (state.snapshot.position or 0) / duration, 0, 1)
+         services.ui.draw_box(ass, root.x, root.y2 - height,
+-          root.x2, root.y2, 0, "#282828", services.ui.alpha(opacity * 0.7), true)
++          root.x2, root.y2, 0, "#2B2930", services.ui.alpha(opacity * 0.7), true)
+         services.ui.draw_box(ass, root.x, root.y2 - height,
+           root.x + root.w * progress, root.y2, 0, opts.accent_color,
+           services.ui.alpha(opacity), true)
+@@ -467,7 +467,7 @@
+     if not self.playlist_empty and self.no_video_opacity > 0 then
+       local icon_size = math.min(root.w, root.h) * 0.34 / ui.dp(1)
+       services.ui.draw_icon(ass, root.x + root.w / 2, root.y + root.h / 2,
+-        "music_note_2", "#FFFFFF", icon_size,
++        "music_note_2", "#E6E0E9", icon_size,
+         services.ui.alpha(self.no_video_opacity), true)
+     end
+     ui.draw_node(self.empty_state, ass, root)
+diff -ruN a/src/platform/dialogs.lua b/src/platform/dialogs.lua
+--- a/src/platform/dialogs.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/platform/dialogs.lua	2026-11-09 20:20:29.565520483 +0800
+@@ -5,9 +5,9 @@
+   local windows, unix, extensions = {}, {}, {}
+   for _, filter in ipairs(filters or {}) do
+     local patterns = filter.patterns or {"*.*"}
+-    windows[#windows + 1] = tostring(filter.label or "Files") .. "|" ..
++    windows[#windows + 1] = tostring(filter.label or "文件") .. "|" ..
+       table.concat(patterns, ";")
+-    unix[#unix + 1] = tostring(filter.label or "Files") .. " | " ..
++    unix[#unix + 1] = tostring(filter.label or "文件") .. " | " ..
+       table.concat(patterns, " ")
+     for _, extension in ipairs(filter.extensions or {}) do
+       if tostring(extension):match("^[%w]+$") then
+@@ -82,7 +82,7 @@
+ 
+   function service:pick_files(options, callback)
+     options = options or {}
+-    local title = tostring(options.title or "Choose files")
++    local title = tostring(options.title or "选择文件")
+     local multiple = options.multiple ~= false
+     local windows_filter, unix_filters, extensions =
+       filter_values(options.filters)
+diff -ruN a/src/platform/filesystem.lua b/src/platform/filesystem.lua
+--- a/src/platform/filesystem.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/platform/filesystem.lua	2026-11-09 20:19:14.113609556 +0800
+@@ -76,7 +76,7 @@
+     local info = self:info(path)
+     if info then
+       if info.is_dir ~= false then return true end
+-      return false, "a file already exists at that path"
++      return false, "该路径已存在文件"
+     end
+     local command = runtime.is_windows and windows_command.powershell(
+       "[System.IO.Directory]::CreateDirectory($argument1) | Out-Null",
+@@ -112,18 +112,18 @@
+     if not contents then return false, "missing " .. tostring(source) end
+     local temporary, backup = target .. ".update", target .. ".previous"
+     if not self:write(temporary, contents) then
+-      return false, "cannot write " .. temporary
++      return false, "无法写入 " .. temporary
+     end
+     self:remove(backup)
+     local had_target = self:read(target) ~= nil
+     if had_target and not self:rename(target, backup) then
+       self:remove(temporary)
+-      return false, "cannot replace " .. target
++      return false, "无法替换 " .. target
+     end
+     if not self:rename(temporary, target) then
+       if had_target then self:rename(backup, target) end
+       self:remove(temporary)
+-      return false, "cannot install " .. target
++      return false, "无法安装 " .. target
+     end
+     self:remove(backup)
+     return true
+diff -ruN a/src/services/bookmark_service.lua b/src/services/bookmark_service.lua
+--- a/src/services/bookmark_service.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/services/bookmark_service.lua	2026-11-09 20:20:37.812612149 +0800
+@@ -48,7 +48,7 @@
+     for _, bookmark in ipairs(self.data[self.current_key] or {}) do
+       chapters[#chapters + 1] = {
+         time = tonumber(bookmark.time) or 0,
+-        title = bookmark.title or ("Bookmark " .. args.format_time(bookmark.time or 0))
++        title = bookmark.title or ("书签 " .. args.format_time(bookmark.time or 0))
+       }
+     end
+     table.sort(chapters, function(a, b)
+@@ -78,7 +78,7 @@
+     for _, entry in ipairs(previous_entries) do entries[#entries + 1] = entry end
+     for _, entry in ipairs(entries) do
+       if math.abs((tonumber(entry.time) or 0) - position) < 0.5 then
+-        args.toast:info("Bookmark already exists", {
++        args.toast:info("书签已存在", {
+           icon = "bookmark", duration = 2
+         })
+         return false
+@@ -96,7 +96,7 @@
+     entries[#entries + 1] = {
+       time = position,
+       number = bookmark_number,
+-      title = "Bookmark " .. tostring(bookmark_number)
++      title = "书签 " .. tostring(bookmark_number)
+     }
+     table.sort(entries, function(a, b)
+       return (tonumber(a.time) or 0) < (tonumber(b.time) or 0)
+@@ -104,12 +104,12 @@
+     self.data[key] = entries
+     if not write_database(self.data) then
+       self.data[key] = previous_entries
+-      args.toast:error("Could not save bookmark", {duration = 2})
++      args.toast:error("无法保存书签", {duration = 2})
+       return false
+     end
+     self:apply()
+     args.toast:success(
+-      "Bookmark added at " .. args.format_time(position),
++      "书签已添加于 " .. args.format_time(position),
+       {icon = "bookmark", duration = 2})
+     args.render()
+     return true
+@@ -150,11 +150,11 @@
+     self.data[key] = #entries > 0 and entries or nil
+     if not write_database(self.data) then
+       self.data[key] = previous_entries
+-      args.toast:error("Could not remove bookmark", {duration = 2})
++      args.toast:error("无法删除书签", {duration = 2})
+       return false
+     end
+     self:apply()
+-    args.toast:success("Bookmark removed", {
++    args.toast:success("书签已删除", {
+       icon = "bookmark", duration = 2
+     })
+     args.render()
+@@ -165,7 +165,7 @@
+     if not chapter or not self.current_key then return false end
+     title = tostring(title or ""):match("^%s*(.-)%s*$")
+     if title == "" then
+-      args.toast:warning("Bookmark name cannot be empty", {duration = 2})
++      args.toast:warning("书签名称不能为空", {duration = 2})
+       return false
+     end
+     local entries = self.data[self.current_key] or {}
+@@ -184,11 +184,11 @@
+     entry.title = title
+     if not write_database(self.data) then
+       entry.title = previous_title
+-      args.toast:error("Could not rename bookmark", {duration = 2})
++      args.toast:error("无法重命名书签", {duration = 2})
+       return false
+     end
+     self:apply()
+-    args.toast:success("Bookmark renamed", {
++    args.toast:success("书签已重命名", {
+       icon = "bookmark", duration = 2
+     })
+     args.render()
+@@ -198,7 +198,7 @@
+   function service:prompt_rename(chapter)
+     if not self:is_bookmark(chapter) then return end
+     input.get({
+-      prompt = "Bookmark name:",
++      prompt = "书签名称：",
+       default_text = chapter.title or "",
+       submit = function(title) self:rename(chapter, title) end,
+       opened = function() args.set_input_active(true) end,
+diff -ruN a/src/services/context_actions.lua b/src/services/context_actions.lua
+--- a/src/services/context_actions.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/services/context_actions.lua	2026-11-09 20:19:14.114341523 +0800
+@@ -48,7 +48,7 @@
+     end
+ 
+     if not process or not runtime then
+-      args.toast:error("Clipboard is unavailable", {duration = 2})
++      args.toast:error("剪贴板不可用", {duration = 2})
+       return
+     end
+ 
+@@ -75,7 +75,7 @@
+       index = index + 1
+       local candidate = commands[index]
+       if not candidate then
+-        args.toast:error("Clipboard is unavailable", {duration = 2})
++        args.toast:error("剪贴板不可用", {duration = 2})
+         return
+       end
+       process:run_async(candidate.command, {
+@@ -98,7 +98,7 @@
+     if is_url(target) then
+       http:open(target, function(ok)
+         if not ok then
+-          args.toast:error("Could not open " .. target, {duration = 2})
++          args.toast:error("无法打开 " .. target, {duration = 2})
+         end
+       end)
+       return
+@@ -106,13 +106,13 @@
+     filesystem:open(target, {reveal = reveal}, function(ok, _, resolved_path)
+       if not ok then
+         args.toast:error(
+-          "Could not open " .. resolved_path, {duration = 2})
++          "无法打开 " .. resolved_path, {duration = 2})
+       end
+     end)
+   end
+ 
+   function service:copy_subtitle(snapshot)
+-    copy(snapshot.subtitle_text, "Subtitle text copied")
++    copy(snapshot.subtitle_text, "已复制字幕文本")
+   end
+ 
+   function service:copy_timestamp(snapshot)
+@@ -124,9 +124,9 @@
+       if path:match("youtu%.be/") or path:match("youtube%.com/") then
+         local separator = path:find("?", 1, true) and "&" or "?"
+         copy(path .. separator .. "t=" .. tostring(seconds) .. "s",
+-          "Share link copied")
++          "已复制分享链接")
+       else
+-        copy(path .. " · " .. timestamp, "Share text copied")
++        copy(path .. " · " .. timestamp, "已复制分享文本")
+       end
+     else
+       copy(timestamp, "Timestamp copied")
+@@ -136,7 +136,7 @@
+   function service:copy_media(snapshot)
+     local path = media_path()
+     copy(path, (snapshot.network or is_url(path)) and
+-      "Media link copied" or "Media path copied")
++      "已复制媒体链接" or "已复制媒体路径")
+   end
+ 
+   function service:cycle_ab_loop()
+@@ -177,7 +177,7 @@
+     if not ready then
+       if args.msg then
+         args.msg.error("could not create script-opts directory: " ..
+-          tostring(reason or "unknown error"))
++          tostring(reason or "未知错误"))
+       end
+       args.toast:error(
+         "Could not create script-opts directory", {duration = 2})
+@@ -204,7 +204,7 @@
+     if not menu_path then return end
+     if not filesystem:read(menu_path) and
+       not filesystem:write_atomic(menu_path, menu_builder.DEFAULT_CONTENTS) then
+-      args.toast:error("Could not create " .. menu_builder.FILE, {duration = 2})
++      args.toast:error("无法创建 " .. menu_builder.FILE, {duration = 2})
+       return
+     end
+     launch(menu_path, false)
+@@ -215,17 +215,17 @@
+     ["copy-subtitle"] = function(snapshot)
+       if type(snapshot.subtitle_text) ~= "string" or
+         not snapshot.subtitle_text:match("%S") then return nil end
+-      return "Copy Subtitle Text", "subtitles",
++      return "复制字幕文本", "subtitles",
+         function() service:copy_subtitle(snapshot) end
+     end,
+     ["copy-timestamp"] = function(snapshot, network)
+       local timestamp = args.format_time(snapshot.position or 0)
+-      return network and ("Share at " .. timestamp) or
++      return network and ("分享于 " .. timestamp) or
+         ("Copy Timestamp · " .. timestamp), "schedule",
+         function() service:copy_timestamp(snapshot) end
+     end,
+     ["copy-media"] = function(snapshot, network)
+-      return network and "Share" or "Copy Media Path", "link",
++      return network and "分享" or "复制媒体路径", "link",
+         function() service:copy_media(snapshot) end
+     end,
+     ["ab-loop"] = function(snapshot)
+@@ -234,27 +234,27 @@
+         "repeat", function() service:cycle_ab_loop() end
+     end,
+     ["add-bookmark"] = function()
+-      return "Add Bookmark", "bookmark_add",
++      return "添加书签", "bookmark_add",
+         function() service:add_bookmark() end
+     end,
+     ["media-information"] = function()
+       local open = media_information_visible()
+-      return open and "Hide Media Information" or "Media Information",
++      return open and "隐藏媒体信息" or "媒体信息",
+         open and "visibility_off" or "info",
+         function() service:show_media_information() end
+     end,
+     ["open-media"] = function(snapshot, network)
+-      return network and "Open in Browser" or "Reveal in File Manager",
++      return network and "在浏览器中打开" or "在文件管理器中显示",
+         network and "open_in_new" or "folder_open",
+         function() service:open_media(snapshot) end
+     end
+   }
+   local always_available = {
+     keybindings = function()
+-      return "Keybindings", "keyboard", function() service:open_keybindings() end
++      return "快捷键", "keyboard", function() service:open_keybindings() end
+     end,
+     customize = function()
+-      return "Customize", "settings", function()
++      return "自定义", "settings", function()
+         service:open_configurations()
+         service:open_menu_file()
+       end
+diff -ruN a/src/services/keybinding_hints.lua b/src/services/keybinding_hints.lua
+--- a/src/services/keybinding_hints.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/services/keybinding_hints.lua	2026-11-09 20:19:05.488935846 +0800
+@@ -75,10 +75,10 @@
+ }
+ 
+ local LABELS = {
+-  SPACE = "Space", ENTER = "Enter", KP_ENTER = "Enter", ESC = "Esc",
++  SPACE = "空格", ENTER = "Enter", KP_ENTER = "Enter", ESC = "Esc",
+   LEFT = "←", RIGHT = "→", UP = "↑", DOWN = "↓",
+   PGUP = "PgUp", PGDWN = "PgDn", HOME = "Home", END = "End",
+-  BS = "Backspace", DEL = "Delete", INS = "Insert",
++  BS = "Backspace", DEL = "删除", INS = "Insert",
+   CTRL = "Ctrl", ALT = "Alt", SHIFT = "Shift", META = "Meta"
+ }
+ 
+diff -ruN a/src/services/media_loader.lua b/src/services/media_loader.lua
+--- a/src/services/media_loader.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/services/media_loader.lua	2026-11-09 20:19:05.489738485 +0800
+@@ -19,15 +19,15 @@
+   end
+ 
+   local function open_file_picker(mode)
+-    local title = mode == "append" and "Add files to playlist" or "Open files"
++    local title = mode == "append" and "添加文件到播放列表" or "打开文件"
+     dialogs:pick_files({title = title, multiple = true},
+       function(output) load_sources(output, mode) end)
+   end
+ 
+   local function open_link_picker(mode)
+-    local title = mode == "append" and "Add link to playlist" or "Open link"
++    local title = mode == "append" and "添加链接到播放列表" or "打开链接"
+     local prompt = mode == "append" and
+-      "Enter a media URL to add to the playlist:" or "Enter a media URL:"
++      "输入要添加到播放列表的媒体 URL：" or "输入媒体 URL："
+     dialogs:prompt_text({
+       title = title, message = prompt, prefill_clipboard_link = true
+     },
+diff -ruN a/src/services/menu_builder.lua b/src/services/menu_builder.lua
+--- a/src/services/menu_builder.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/services/menu_builder.lua	2026-11-09 20:20:29.567166393 +0800
+@@ -342,7 +342,7 @@
+       end
+     end
+     if #items > 0 then
+-      local title = current > 0 and "Off" or "Auto"
++      local title = current > 0 and "关闭" or "自动"
+       if with_type then title = kind:sub(1, 1):upper() .. ": " .. title end
+       items[#items + 1] = {
+         title = title,
+@@ -367,7 +367,7 @@
+     local current = tonumber(read("chapter")) or -1
+     for index, chapter in ipairs(read("chapter-list") or {}) do
+       local title = shorten(chapter.title)
+-      if title == "" then title = "Chapter " .. index end
++      if title == "" then title = "章节 " .. index end
+       local time = tonumber(chapter.time) or 0
+       items[#items + 1] = {
+         title = title .. "\t" .. string.format("[%02d:%02d:%02d]",
+@@ -384,7 +384,7 @@
+     local current = tonumber(read("current-edition")) or -1
+     for index, edition in ipairs(read("edition-list") or {}) do
+       local title = shorten(edition.title)
+-      if title == "" then title = "Edition " .. index end
++      if title == "" then title = "版本 " .. index end
+       if edition.default then title = title .. " [default]" end
+       items[#items + 1] = {
+         title = title,
+@@ -417,7 +417,7 @@
+       if title == "" then title = stem or name end
+       extension = ext or ""
+     end
+-    title = title ~= "" and shorten(title) or ("Item " .. index)
++    title = title ~= "" and shorten(title) or ("项目 " .. index)
+     if extension ~= "" then title = title .. "\t" .. extension:upper() end
+     return title
+   end
+diff -ruN a/src/services/shader_loader.lua b/src/services/shader_loader.lua
+--- a/src/services/shader_loader.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/services/shader_loader.lua	2026-11-09 20:19:14.115184954 +0800
+@@ -25,12 +25,12 @@
+   end
+ 
+   local function open_file_picker()
+-    local title = "Add video shaders"
++    local title = "添加视频着色器"
+     dialogs:pick_files({
+       title = title,
+       multiple = true,
+       filters = {{
+-        label = "Shader files",
++        label = "着色器文件",
+         patterns = SHADER_PATTERNS,
+         extensions = SHADER_EXTENSIONS
+       }}
+@@ -63,17 +63,17 @@
+         render()
+       else
+         msg.error("shader download failed: " ..
+-          tostring(response.stderr or "unknown error"))
+-        args.toast:error("Shader download failed", {duration = 3})
++          tostring(response.stderr or "未知错误"))
++        args.toast:error("着色器下载失败", {duration = 3})
+       end
+     end)
+   end
+ 
+   local function open_link_picker()
+-    local title = "Add video shader link"
++    local title = "添加视频着色器链接"
+     dialogs:prompt_text({
+       title = title,
+-      message = "Enter a shader URL:",
++      message = "输入着色器 URL：",
+       prefill_clipboard_link = true
+     }, download_shader)
+   end
+diff -ruN a/src/services/snapshot.lua b/src/services/snapshot.lua
+--- a/src/services/snapshot.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/services/snapshot.lua	2026-11-09 20:20:29.568019054 +0800
+@@ -70,7 +70,7 @@
+     for index, entry in ipairs(playlist_native) do
+       local title = entry.title
+       if type(title) ~= "string" or title:match("^%s*$") then
+-        title = entry.filename or ("Item " .. tostring(index))
++        title = entry.filename or ("项目 " .. tostring(index))
+         title = title:gsub("[?#].*$", ""):gsub("[/\\]+$", "")
+         title = title:match("([^/\\]+)$") or title
+       end
+@@ -102,9 +102,9 @@
+     local video_stream_index = 0
+     local subtitle_id = property_number("sid", 0) or 0
+     local secondary_subtitle_id = property_number("secondary-sid", 0) or 0
+-    local subtitle_items = {{id = 0, label = "Off", language = nil}}
++    local subtitle_items = {{id = 0, label = "关闭", language = nil}}
+     local audio_id = property_number("aid", 0) or 0
+-    local audio_items = {{id = 0, label = "Off", language = nil}}
++    local audio_items = {{id = 0, label = "关闭", language = nil}}
+     local shader_items = {}
+     local shaders = property_native("glsl-shaders", {}) or {}
+     if type(shaders) == "table" then
+@@ -158,7 +158,7 @@
+         if type(label) ~= "string" or label:match("^%s*$") then
+           local resolution = track["demux-w"] and track["demux-h"] and
+             (tostring(track["demux-w"]) .. "×" .. tostring(track["demux-h"])) or nil
+-          label = resolution or ("Video " .. tostring(track.id))
++          label = resolution or ("视频 " .. tostring(track.id))
+         end
+         local item = {
+           id = tonumber(track.id) or track.id,
+@@ -170,7 +170,7 @@
+         if track.albumart == true or track.image == true then
+           item.image = true
+           item.video_index = video_stream_index
+-          item.details = item.details ~= "" and item.details or "Image"
++          item.details = item.details ~= "" and item.details or "图像"
+           image_items[#image_items + 1] = item
+         else
+           video_items[#video_items + 1] = item
+@@ -179,8 +179,8 @@
+       elseif track.type == "sub" then
+         local label = track.title
+         if type(label) ~= "string" or label:match("^%s*$") then
+-          label = track.lang and ("Subtitle " .. tostring(track.id)) or
+-            ("Subtitle " .. tostring(track.id))
++          label = track.lang and ("字幕 " .. tostring(track.id)) or
++            ("字幕 " .. tostring(track.id))
+         end
+         subtitle_items[#subtitle_items + 1] = {
+           id = tonumber(track.id) or track.id,
+@@ -190,7 +190,7 @@
+       elseif track.type == "audio" then
+         local label = track.title
+         if type(label) ~= "string" or label:match("^%s*$") then
+-          label = "Audio " .. tostring(track.id)
++          label = "音频 " .. tostring(track.id)
+         end
+         audio_items[#audio_items + 1] = {
+           id = tonumber(track.id) or track.id,
+@@ -239,13 +239,13 @@
+     end
+ 
+     local video_track_count = #video_items
+-    local selectable_video_items = {{id = 0, label = "Off", language = nil}}
++    local selectable_video_items = {{id = 0, label = "关闭", language = nil}}
+     for _, item in ipairs(video_items) do
+       selectable_video_items[#selectable_video_items + 1] = item
+     end
+     video_items = selectable_video_items
+     if #image_items > 0 then
+-      video_items[#video_items + 1] = {separator = true, label = "Images"}
++      video_items[#video_items + 1] = {separator = true, label = "图片"}
+       for _, item in ipairs(image_items) do
+         video_items[#video_items + 1] = item
+       end
+diff -ruN a/src/services/sponsorblock.lua b/src/services/sponsorblock.lua
+--- a/src/services/sponsorblock.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/services/sponsorblock.lua	2026-11-09 20:20:29.568614664 +0800
+@@ -16,38 +16,38 @@
+   SPONSORBLOCK_CATEGORY_SET[category] = true
+ end
+ local CATEGORY_LABELS = {
+-  sponsor = "Sponsor",
+-  intro = "Intro",
+-  outro = "Outro",
+-  interaction = "Interaction reminder",
+-  selfpromo = "Self promotion",
+-  exclusive_access = "Exclusive access",
+-  preview = "Preview",
+-  hook = "Hook / greeting",
+-  music_offtopic = "Off-topic music",
+-  poi_highlight = "Highlight",
+-  filler = "Filler"
++  sponsor = "赞助",
++  intro = "片头",
++  outro = "片尾",
++  interaction = "互动提醒",
++  selfpromo = "自我推广",
++  exclusive_access = "独占内容",
++  preview = "预览",
++  hook = "开场钩子",
++  music_offtopic = "无关音乐",
++  poi_highlight = "高亮",
++  filler = "填充内容"
+ }
+ local SEGMENT_ALPHA = "80"
+ local CATEGORY_STYLES = {
+-  sponsor = {color = "#00d400", text_color = "#050708", alpha = SEGMENT_ALPHA},
+-  selfpromo = {color = "#ffff00", text_color = "#050708", alpha = SEGMENT_ALPHA},
++  sponsor = {color = "#00d400", text_color = "#211F26", alpha = SEGMENT_ALPHA},
++  selfpromo = {color = "#ffff00", text_color = "#211F26", alpha = SEGMENT_ALPHA},
+   exclusive_access =
+-    {color = "#008a5c", text_color = "#050708", alpha = SEGMENT_ALPHA},
++    {color = "#008a5c", text_color = "#211F26", alpha = SEGMENT_ALPHA},
+   interaction =
+-    {color = "#cc00ff", text_color = "#050708", alpha = SEGMENT_ALPHA},
+-  intro = {color = "#00ffff", text_color = "#050708", alpha = SEGMENT_ALPHA},
+-  outro = {color = "#0202ed", text_color = "#FFFFFF", alpha = SEGMENT_ALPHA},
+-  preview = {color = "#008fd6", text_color = "#050708", alpha = SEGMENT_ALPHA},
+-  hook = {color = "#395699", text_color = "#FFFFFF", alpha = SEGMENT_ALPHA},
++    {color = "#cc00ff", text_color = "#211F26", alpha = SEGMENT_ALPHA},
++  intro = {color = "#00ffff", text_color = "#211F26", alpha = SEGMENT_ALPHA},
++  outro = {color = "#0202ed", text_color = "#E6E0E9", alpha = SEGMENT_ALPHA},
++  preview = {color = "#008fd6", text_color = "#211F26", alpha = SEGMENT_ALPHA},
++  hook = {color = "#395699", text_color = "#E6E0E9", alpha = SEGMENT_ALPHA},
+   music_offtopic =
+-    {color = "#ff9900", text_color = "#050708", alpha = SEGMENT_ALPHA},
++    {color = "#ff9900", text_color = "#211F26", alpha = SEGMENT_ALPHA},
+   poi_highlight =
+-    {color = "#ff1684", text_color = "#050708", alpha = SEGMENT_ALPHA},
+-  filler = {color = "#7300ff", text_color = "#FFFFFF", alpha = SEGMENT_ALPHA}
++    {color = "#ff1684", text_color = "#211F26", alpha = SEGMENT_ALPHA},
++  filler = {color = "#7300ff", text_color = "#E6E0E9", alpha = SEGMENT_ALPHA}
+ }
+ local DEFAULT_CATEGORY_STYLE = {
+-  color = "#ffffff", text_color = "#050708", alpha = SEGMENT_ALPHA
++  color = "#ffffff", text_color = "#211F26", alpha = SEGMENT_ALPHA
+ }
+ 
+ local function youtube_id_from_url(url)
+@@ -431,7 +431,7 @@
+     clear_feedback()
+     mp.commandv("seek", tostring(feedback.skipped_from or segment.start_time),
+       "absolute+exact")
+-    notify("Skip undone", nil, segment.source)
++    notify("已撤销跳过", nil, segment.source)
+     render()
+   end
+ 
+@@ -440,7 +440,7 @@
+     local segment = state.feedback and state.feedback.segment or
+       state.last_segment
+     if not segment or not segment.uuid then
+-      notify("No SponsorBlock segment is available to vote on", 3, true)
++      notify("没有可投票的 SponsorBlock 片段", 3, true)
+       return
+     end
+     direction = tonumber(direction) == 1 and 1 or 0
+@@ -460,7 +460,7 @@
+       if request_id ~= self.request_id then return end
+       if success and status >= 200 and status < 300 then
+         if state.feedback then state.feedback.vote = direction end
+-        notify(direction == 1 and "Upvote submitted" or "Downvote submitted",
++        notify(direction == 1 and "已提交支持" or "已提交反对",
+           2, true)
+       else
+         notify("Vote failed (HTTP " .. tostring(status) .. ")", 3, true)
+@@ -472,20 +472,20 @@
+   function service:set_segment_boundary()
+     if not opts.sponsorblock_should_use then return end
+     if not state.video_id then
+-      notify("Open a YouTube video before marking a segment", 3, true)
++      notify("请先打开 YouTube 视频再标记片段", 3, true)
+       return
+     end
+     local position = mp.get_property_number("time-pos")
+     if not position then return end
+     if not state.draft or state.draft.b then
+       state.draft = {a = position, category = "sponsor"}
+-      notify("Segment start set", 2, true)
++      notify("已设置片段起点", 2, true)
+     else
+       state.draft.b = position
+       if state.draft.b < state.draft.a then
+         state.draft.a, state.draft.b = state.draft.b, state.draft.a
+       end
+-      notify("Segment end set", 2, true)
++      notify("已设置片段终点", 2, true)
+     end
+     render()
+   end
+@@ -511,7 +511,7 @@
+     local draft = state.draft
+     if not state.video_id or not draft or not draft.a or not draft.b or
+       draft.b - draft.a <= 0 then
+-      notify("Set both segment boundaries before submitting", 3, true)
++      notify("提交前请先设置片段起止点", 3, true)
+       return
+     end
+     category = category or draft.category or "sponsor"
+@@ -635,7 +635,7 @@
+       if type(data) ~= "table" then
+         state.segments = {}
+         local detail = stderr and stderr:match("^%s*(.-)%s*$") or ""
+-        notify("Could not load segments" ..
++        notify("无法加载片段" ..
+           (detail ~= "" and (": " .. detail) or ""), 3)
+         render()
+         return
+@@ -707,17 +707,17 @@
+       actions[#actions + 1] = {
+         name = "youtube-skip-segment",
+         icon = "skip_next",
+-        label = "Skip " .. category_label(prompt.category),
++        label = "跳过 " .. category_label(prompt.category),
+         tooltip = prompt.source == "chapter" and
+           ("Skip chapter: " .. tostring(prompt.title or "")) or
+-          ("Skip SponsorBlock " .. category_label(prompt.category):lower()),
++          ("跳过 SponsorBlock " .. category_label(prompt.category):lower()),
+         on_click = function() self:skip_prompt() end
+       }
+       actions[#actions + 1] = {
+         name = "youtube-dismiss-segment",
+         icon = "close",
+         label = "",
+-        tooltip = "Do not skip this segment",
++        tooltip = "不跳过此片段",
+         compact = true,
+         on_click = function() self:dismiss_prompt() end
+       }
+@@ -729,7 +729,7 @@
+         name = "youtube-upvote-segment",
+         icon = "thumb_up",
+         label = "",
+-        tooltip = "Upvote this segment",
++        tooltip = "支持此片段",
+         compact = true,
+         selected = feedback.vote == 1,
+         on_click = function() self:vote(1) end
+@@ -738,7 +738,7 @@
+         name = "youtube-downvote-segment",
+         icon = "thumb_down",
+         label = "",
+-        tooltip = "Downvote this segment",
++        tooltip = "反对此片段",
+         compact = true,
+         selected = feedback.vote == 0,
+         on_click = function() self:vote(0) end
+@@ -748,8 +748,8 @@
+       actions[#actions + 1] = {
+         name = "youtube-undo-skip",
+         icon = "undo",
+-        label = "Undo",
+-        tooltip = "Undo the last skip",
++        label = "撤销",
++        tooltip = "撤销上次跳过",
+         on_click = function() self:undo() end
+       }
+     end
+@@ -766,39 +766,39 @@
+     if not draft then
+       actions[#actions + 1] = {
+         name = "youtube-mark-segment", icon = "flag", label = "",
+-        tooltip = "Set the start of a SponsorBlock segment",
++        tooltip = "设置 SponsorBlock 片段起点",
+         compact = true,
+         on_click = function() self:set_segment_boundary() end
+       }
+     elseif not draft.b then
+       actions[#actions + 1] = {
+-        name = "youtube-mark-segment-end", icon = "flag", label = "Set end",
+-        tooltip = "Set the end of the SponsorBlock segment",
++        name = "youtube-mark-segment-end", icon = "flag", label = "设置终点",
++        tooltip = "设置 SponsorBlock 片段终点",
+         on_click = function() self:set_segment_boundary() end
+       }
+       actions[#actions + 1] = {
+         name = "youtube-cancel-segment", icon = "close", label = "",
+-        tooltip = "Cancel segment", compact = true,
++        tooltip = "取消片段", compact = true,
+         on_click = function() self:cancel_submission() end
+       }
+     else
+       actions[#actions + 1] = {
+         name = "youtube-segment-category", icon = "category",
+         label = category_label(draft.category),
+-        tooltip = "Change segment category",
++        tooltip = "更改片段类别",
+         on_click = function() self:cycle_submission_category() end
+       }
+       actions[#actions + 1] = {
+         name = "youtube-submit-segment",
+         icon = state.submitting and "progress_activity" or "upload",
+-        label = state.submitting and "Submitting" or "Submit",
++        label = state.submitting and "提交中" or "提交",
+         tooltip = "Submit this segment to SponsorBlock",
+         enabled = not state.submitting,
+         on_click = function() self:submit_segment() end
+       }
+       actions[#actions + 1] = {
+         name = "youtube-cancel-segment", icon = "close", label = "",
+-        tooltip = "Cancel segment", compact = true,
++        tooltip = "取消片段", compact = true,
+         on_click = function() self:cancel_submission() end
+       }
+     end
+diff -ruN a/src/services/subtitle_loader.lua b/src/services/subtitle_loader.lua
+--- a/src/services/subtitle_loader.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/services/subtitle_loader.lua	2026-11-09 20:19:05.496162810 +0800
+@@ -43,12 +43,12 @@
+   end
+ 
+   local function open_file_picker(secondary)
+-    local title = secondary and "Add secondary subtitle" or "Add subtitles"
++    local title = secondary and "添加第二字幕" or "添加字幕"
+     dialogs:pick_files({
+       title = title,
+       multiple = true,
+       filters = {{
+-        label = "Subtitle files",
++        label = "字幕文件",
+         patterns = SUBTITLE_PATTERNS,
+         extensions = SUBTITLE_EXTENSIONS
+       }}
+@@ -64,10 +64,10 @@
+   end
+ 
+   local function open_link_picker(secondary)
+-    local title = secondary and "Add secondary subtitle link" or "Add subtitle link"
++    local title = secondary and "添加第二字幕链接" or "添加字幕链接"
+     dialogs:prompt_text({
+       title = title,
+-      message = "Enter a subtitle URL:",
++      message = "输入字幕 URL：",
+       prefill_clipboard_link = true
+     }, function(output) attach_link(output, secondary) end)
+   end
+diff -ruN a/src/services/thumbnail_service.lua b/src/services/thumbnail_service.lua
+--- a/src/services/thumbnail_service.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/services/thumbnail_service.lua	2026-11-09 20:17:45.831269965 +0800
+@@ -71,11 +71,11 @@
+       sponsorblock_preview_at(pos) or nil
+     local category_text = category and category.text or nil
+     local category_color = category and category.color or nil
+-    local category_text_color = category and category.text_color or "#FFFFFF"
++    local category_text_color = category and category.text_color or "#E6E0E9"
+     local pill_text_size = 22
+     local pill_vertical_padding = dp(4)
+     local pill_horizontal_padding = dp(12)
+-    local pill_background_alpha = "33"
++    local pill_background_alpha = "00"
+     local thumb_w = has_thumbnail and state.width or 0
+     local thumb_h = has_thumbnail and state.height or 0
+     local pill_h = dp(pill_text_size) + pill_vertical_padding * 2
+@@ -142,7 +142,7 @@
+ 
+     if has_thumbnail then
+       draw_box(ass, thumb_x1 - frame_pad, thumb_y1 - frame_pad,
+-           thumb_x2 + frame_pad, thumb_y2 + frame_pad, 0, "#050708", "20")
++           thumb_x2 + frame_pad, thumb_y2 + frame_pad, 0, "#211F26", "20")
+       local overlay_x = math.floor(thumb_x1 + 0.5)
+       local overlay_y = math.floor(thumb_y1 + 0.5)
+       enqueue_effect("thumbnail-request", function()
+@@ -153,16 +153,16 @@
+     end
+ 
+     draw_box(ass, time_x1, pill_y1, time_x2, pill_y2, pill_h / 2,
+-         "#050708", pill_background_alpha)
++         "#211F26", pill_background_alpha)
+     draw_text(ass, (time_x1 + time_x2) / 2, (pill_y1 + pill_y2) / 2,
+-          time_text, pill_text_size, "#FFFFFF")
++          time_text, pill_text_size, "#E6E0E9")
+ 
+     if chapter_text then
+       draw_box(ass, chapter_x1, pill_y1, chapter_x2, pill_y2, pill_h / 2,
+-           "#050708", pill_background_alpha)
++           "#211F26", pill_background_alpha)
+       draw_text(ass, (chapter_x1 + chapter_x2) / 2,
+             (pill_y1 + pill_y2) / 2, chapter_text, pill_text_size,
+-            "#FFFFFF")
++            "#E6E0E9")
+     end
+ 
+     if category_text then
+diff -ruN a/src/services/update_service.lua b/src/services/update_service.lua
+--- a/src/services/update_service.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/services/update_service.lua	2026-11-09 20:19:05.497905848 +0800
+@@ -92,9 +92,9 @@
+   local function show(release, notes)
+     state.version = tostring(release.tag_name or ""):gsub("^[vV]", "")
+     state.tag = release.tag_name
+-    state.notes = notes or release.body or "See the GitHub release for details."
++    state.notes = notes or release.body or "详情见 GitHub 发布页。"
+     if state.notes:match("^%s*$") then
+-      state.notes = "See the GitHub release for details."
++      state.notes = "详情见 GitHub 发布页。"
+     end
+     state.asset_url = nil
+     for _, asset in ipairs(release.assets or {}) do
+@@ -175,7 +175,7 @@
+     if state.busy or state.done then return end
+     if state.dont_ask or auto then save_mode("auto") end
+     if not state.asset_url then
+-      state.error = "This release does not include an update archive."
++      state.error = "此版本不包含更新包。"
+       render()
+       return
+     end
+@@ -187,7 +187,7 @@
+     download(state.asset_url, archive, function(ok, response)
+       if not ok then
+         state.busy = false
+-        state.error = "Download failed. Check your internet connection and try again."
++        state.error = "下载失败，请检查网络后重试。"
+         msg.error("material-osc update download failed: " ..
+           tostring(response.stderr or ""))
+         render()
+@@ -253,7 +253,7 @@
+ 
+   function service:open_repository()
+     open_url("https://github.com/" .. REPOSITORY,
+-      "Could not open the material-osc repository")
++      "无法打开 material-osc 仓库")
+   end
+ 
+   function service:open_release()
+@@ -261,7 +261,7 @@
+     if state.tag and tostring(state.tag) ~= "" then
+       url = url .. "/tag/" .. tostring(state.tag)
+     end
+-    open_url(url, "Could not open the release page")
++    open_url(url, "无法打开发布页")
+   end
+ 
+   return service
+diff -ruN a/src/services/ytdl_service.lua b/src/services/ytdl_service.lua
+--- a/src/services/ytdl_service.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/services/ytdl_service.lua	2026-11-09 20:20:29.569289403 +0800
+@@ -2,7 +2,7 @@
+ 
+ local function quality_label(height, fps)
+   height, fps = tonumber(height) or 0, tonumber(fps) or 0
+-  local label = height > 0 and (tostring(height) .. "p") or "Video"
++  local label = height > 0 and (tostring(height) .. "p") or "视频"
+   if height == 2160 then label = label .. " (4K)"
+   elseif height == 4320 then label = label .. " (8K)" end
+   if fps > 30 then label = label .. " " .. tostring(math.floor(fps + 0.5)) .. "fps" end
+@@ -92,7 +92,7 @@
+     state.pending_subtitles = nil
+     for _, subtitle in ipairs(pending.tracks or {}) do
+       mp.commandv("sub-add", subtitle.url, subtitle.selected and "select" or "auto",
+-        subtitle.title or "Subtitle", subtitle.language or "und")
++        subtitle.title or "字幕", subtitle.language or "und")
+     end
+     mp.set_property_native("sub-visibility", pending.visible ~= false)
+   end
+@@ -110,7 +110,7 @@
+       if success and (not result or result.status == nil or result.status == 0) then
+         args.set_settings_page("subtitles")
+       else
+-        args.toast:error("Failed to load auto subtitle", {duration = 3})
++        args.toast:error("自动字幕加载失败", {duration = 3})
+       end
+       args.render()
+     end)
+diff -ruN a/src/ui/brand_logo.lua b/src/ui/brand_logo.lua
+--- a/src/ui/brand_logo.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/ui/brand_logo.lua	2026-11-09 20:17:45.831694620 +0800
+@@ -104,7 +104,7 @@
+         transformed_x(x3), transformed_y(y3))
+     end
+ 
+-    begin_shape("#FFFFFF")
++    begin_shape("#E6E0E9")
+     transformed_move(54.239, 43.088)
+     transformed_curve(52.478, 43.088, 50.862, 44.497, 50.862, 46.465)
+     transformed_line(50.862, 64.000)
+diff -ruN a/src/ui/components/context_menu.lua b/src/ui/components/context_menu.lua
+--- a/src/ui/components/context_menu.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/ui/components/context_menu.lua	2026-11-09 21:18:46.906352675 +0800
+@@ -198,7 +198,7 @@
+       local active = item.submenu and state.path[self.level] == item.submenu_index
+       if hovered or active then
+         ui.draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-          bounds.h / 2, "#FFFFFF",
++          bounds.h / 2, "#E6E0E9",
+           ui.alpha(base_opacity * (hovered and 0.15 or 0.10)),
+           true, node.clip_bounds)
+       end
+@@ -239,7 +239,7 @@
+       ui.draw_text(ass, text_x, center_y,
+         ui.truncate_to_width(item.label,
+           math.max(0, bounds.x2 - trailing - text_x), layout.text_size),
+-        layout.text_size, "#FFFFFF", ui.alpha(opacity), ui.default_text_font,
++        layout.text_size, "#E6E0E9", ui.alpha(opacity), ui.default_text_font,
+         4, nil, true, node.clip_bounds)
+     end
+     return row
+@@ -285,7 +285,7 @@
+       local opacity = node.content_opacity * self.opacity
+       if enabled and node.interactive and ui.mouse_in(bounds) then
+         ui.draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-          bounds.h / 2, "#FFFFFF", ui.alpha(opacity * 0.15), true,
++          bounds.h / 2, "#E6E0E9", ui.alpha(opacity * 0.15), true,
+           node.clip_bounds)
+       end
+       ui.draw_icon(ass, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2,
+@@ -326,7 +326,7 @@
+     draw_node(panel, ass, bounds)
+     node.clip_bounds = bounds
+     ui.draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2, radius,
+-      "#050708", ui.alpha(shell_opacity), true)
++      "#211F26", ui.alpha(shell_opacity), true)
+     -- keep a pending "close deeper menus" request from firing while the
+     -- pointer is already inside the deepest open submenu
+     if level == #state.path + 1 and level > 1 and hover.target and
+@@ -359,7 +359,7 @@
+       if item.separator then
+         ui.draw_box(ass, bounds.x + padding + dp(4), y,
+           bounds.x2 - padding - dp(4), y + separator_h,
+-          separator_h / 2, "#FFFFFF",
++          separator_h / 2, "#E6E0E9",
+           ui.alpha(node.content_opacity * content_opacity * 0.15),
+           true, node.clip_bounds)
+       else
+@@ -482,8 +482,8 @@
+   function node:update(snapshot, refresh_items)
+     if not state.open and state.pending_x ~= nil and
+       not state.animation:is_running() and state.animation.value <= 0.001 then
+-      state.width_animation:snap(dp(28))
+-      state.height_animation:snap(dp(28))
++      state.width_animation:snap(dp(2))
++      state.height_animation:snap(dp(2))
+       state.x, state.y = state.pending_x, state.pending_y
+       state.pending_x, state.pending_y = nil, nil
+       state.close_x, state.close_y = nil, nil
+@@ -509,8 +509,8 @@
+     self.content_opacity = self.morph * content_progress
+     self.interactive = state.open and self.morph > 0.9
+     self.backdrop.modifier.pointer_enabled = state.open
+-    state.width_animation:set_target(state.open and self.panel_w or dp(28))
+-    state.height_animation:set_target(state.open and self.panel_h or dp(28))
++    state.width_animation:set_target(state.open and self.panel_w or dp(2))
++    state.height_animation:set_target(state.open and self.panel_h or dp(2))
+   end
+ 
+   function node:measure(parent)
+@@ -518,10 +518,7 @@
+   end
+ 
+   function node:draw(ass, bounds)
+-    if self.morph <= 0 and not state.open and
+-      not state.animation:is_running() and
+-      not state.width_animation:is_running() and
+-      not state.height_animation:is_running() then
++    if not state.open and self.morph <= 0.001 then
+       state.bounds, state.keyboard_bounds = nil, nil
+       return
+     end
+@@ -534,7 +531,7 @@
+     local anchor_x = not state.open and state.close_x or state.x
+     local anchor_y = not state.open and state.close_y or state.y
+     anchor_x, anchor_y = anchor_x or state.x, anchor_y or state.y
+-    local source_w, source_h = dp(28), dp(28)
++    local source_w, source_h = dp(2), dp(2)
+     local source_x = clamp(anchor_x - source_w / 2, bounds.x + margin,
+       bounds.x2 - source_w - margin)
+     local source_y = clamp(anchor_y - source_h / 2, bounds.y + margin,
+@@ -555,8 +552,7 @@
+     -- root panel morphs open from the click point
+     self.anchors = {}
+     local root_radius = dp(14) + dp(14) * self.morph
+-    local shell_opacity = state.open and
+-      (0.53 + self.morph * 0.39) or self.morph * 0.92
++    local shell_opacity = 1
+     draw_level(ass, 1, surface, root_radius, shell_opacity, 1)
+     state.bounds = surface
+     state.keyboard_bounds = nil
+@@ -599,7 +595,7 @@
+       local radius = dp(14) + dp(14) * progress
+       local content = clamp((progress - 0.35) / 0.65, 0, 1)
+       draw_level(ass, level, rect, radius,
+-        0.92 * self.content_opacity * clamp(progress * 1.6, 0, 1), content)
++        self.content_opacity * clamp(progress * 1.6, 0, 1), content)
+       -- keep cascading from the final position so deeper panels don't drift
+       parent = Rect({x = x, y = y, w = layout.w, h = layout.h})
+       -- the arrow keys move inside the deepest open submenu
+diff -ruN a/src/ui/components/controls.lua b/src/ui/components/controls.lua
+--- a/src/ui/components/controls.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/ui/components/controls.lua	2026-11-09 20:54:30.393316174 +0800
+@@ -164,7 +164,7 @@
+       local normal_limit_y = self.track_y2 -
+         track_length * 100 / self.max_volume_percentage
+       local boosted = self.volume > 100
+-      local active_color = boosted and "#FF9800" or "#FFFFFF"
++      local active_color = boosted and "#FF9800" or "#E6E0E9"
+       local handle_w = dp(24)
+       local handle_h = volume_state.dragging and dp(2) or dp(4)
+       local handle_gap = dp(4)
+@@ -172,7 +172,7 @@
+ 
+       draw_rect(ass, track_x - track_w / 2, self.track_y1,
+             track_x + track_w / 2, handle_y - handle_h / 2 - handle_gap,
+-            "#FFFFFF", inactive_alpha)
++            "#E6E0E9", inactive_alpha)
+ 
+       if boosted then
+         draw_rect(ass, track_x - track_w / 2, active_start_y,
+@@ -180,11 +180,11 @@
+               "#FF9800", active_alpha)
+         draw_rect(ass, track_x - track_w / 2, normal_limit_y,
+               track_x + track_w / 2, self.track_y2,
+-              "#FFFFFF", active_alpha)
++              "#E6E0E9", active_alpha)
+       else
+         draw_rect(ass, track_x - track_w / 2, active_start_y,
+               track_x + track_w / 2, self.track_y2,
+-              "#FFFFFF", active_alpha)
++              "#E6E0E9", active_alpha)
+       end
+ 
+       draw_box(ass, track_x - handle_w / 2, handle_y - handle_h / 2,
+@@ -214,7 +214,7 @@
+       name = "volume-button",
+       icon = "volume_up",
+       render_pass = "dynamic",
+-      tooltip = "Mute",
++      tooltip = "静音",
+       shortcut_before = {"volume-down", "volume-up"},
+       shortcut = "mute",
+       on_click = function() mp.commandv("cycle", "mute") end,
+@@ -273,9 +273,9 @@
+       volume_state.popup_bounds = popup
+       self.guard.modifier.pointer_enabled = visual_progress > 0.2
+ 
+-      local popup_alpha = mouse_in(popup) and "00" or "58"
++      local popup_alpha = "00"
+       draw_box(ass, popup.x1, popup.y1, popup.x2, popup.y2,
+-           popup.w / 2, "#050708", popup_alpha)
++           popup.w / 2, "#211F26", popup_alpha)
+ 
+       local slider_bounds = Rect({
+         x = popup.x,
+@@ -443,7 +443,7 @@
+         end
+         if is_render_pass("dynamic") then
+           local color =
+-            action.selected and config.opts.accent_color or "#050708"
++            action.selected and "#4F378B" or "#211F26"
+           local alpha = faded_alpha(action.selected and "30" or "48")
+           draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+             bounds.h / 2, color, alpha, ignore_fade)
+@@ -451,12 +451,12 @@
+           local icon_x = label == "" and (bounds.x + bounds.w / 2) or
+             (bounds.x + dp(19))
+           draw_icon(ass, icon_x, bounds.y + bounds.h / 2,
+-            action.icon or "skip_next", "#FFFFFF", 22,
++            action.icon or "skip_next", "#E6E0E9", 22,
+             faded_alpha(action.enabled == false and "90" or "00"),
+             ignore_fade)
+           if label ~= "" then
+             draw_text(ass, bounds.x + dp(36), bounds.y + bounds.h / 2,
+-              label, 19, "#FFFFFF",
++              label, 19, "#E6E0E9",
+               faded_alpha(action.enabled == false and "90" or "00"),
+               default_text_font, 4, nil, ignore_fade)
+           end
+@@ -464,7 +464,7 @@
+           -- which is composed afterward, remains above the entire action.
+           if action.enabled ~= false and mouse_in(bounds) then
+             draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-              bounds.h / 2, "#FFFFFF", faded_alpha("D8"), ignore_fade)
++              bounds.h / 2, "#E6E0E9", faded_alpha("D8"), ignore_fade)
+           end
+         end
+         if not self.suppressed and opacity > 0.5 and action.tooltip and
+@@ -618,9 +618,9 @@
+         self.label_visibility:set_visible(label ~= "")
+         self.pill.tooltip = action.tooltip
+         self.pill.modifier.background_color =
+-          action.selected and config.opts.accent_color or "#050708"
++          action.selected and "#4F378B" or "#211F26"
+         self.pill.modifier.background_alpha =
+-          action.selected and "30" or "58"
++          "00"
+       end
+ 
+       function button:measure(parent)
+@@ -677,7 +677,7 @@
+ 
+   local function ControlsRow()
+     local node = {modifier = Modifier():fillMaxWidth()}
+-    node.play = IconButton({name = "play-button", icon = "pause", tooltip = "Pause",
++    node.play = IconButton({name = "play-button", icon = "pause", tooltip = "暂停",
+       shortcut = "pause",
+       on_click = function() mp.commandv("cycle", "pause") end})
+     -- with prev_next_beside_play, previous/next sit beside play/pause
+@@ -695,16 +695,16 @@
+       end
+     end
+     node.previous = IconButton({name = "playlist-previous", icon = "skip_previous",
+-      tooltip = "Previous", shortcut = "playlist-prev",
++      tooltip = "上一个", shortcut = "playlist-prev",
+       on_click = function() step_playlist(-1) end})
+     node.next = IconButton({name = "playlist-next", icon = "skip_next",
+-      tooltip = "Next", shortcut = "playlist-next",
++      tooltip = "下一个", shortcut = "playlist-next",
+       on_click = function() step_playlist(1) end})
+     node.volume = VolumeControl()
+     node.time = TextItem({
+       text = "0:00 / 0:00",
+       render_pass = "dynamic",
+-      tooltip = "Toggle Remaining",
++      tooltip = "切换剩余时间",
+       modifier = Modifier():padding({
+         horizontal = dp(10),
+         vertical = dp(6)
+@@ -745,8 +745,8 @@
+         ending = dp(8),
+         vertical = dp(6)
+       }):background({
+-        color = "#050708",
+-        alpha = "58",
++        color = "#211F26",
++        alpha = "00",
+         shape = {kind = "rounded", percent = 50}
+       }):clickable({
+         name = "chapter-display",
+@@ -817,9 +817,9 @@
+ 
+     node.cached_time = TextItem({
+       text = "0:00",
+-      color = "#000000",
++      color = "#CAC4D0",
+       render_pass = "dynamic",
+-      tooltip = "Cached Time",
++      tooltip = "缓存时间",
+       modifier = Modifier():padding({
+         starting = dp(4),
+         ending = dp(12),
+@@ -851,7 +851,7 @@
+       children = starting
+     })
+     node.subtitles = IconButton({name = "subtitles-button", icon = "subtitles",
+-      horizontal_padding = 6, tooltip = "Subtitles",
++      horizontal_padding = 6, tooltip = "字幕",
+       shortcut = "subtitles",
+       on_click = toggle_subtitles,
+       on_scroll_up = function() cycle_subtitle(-1) end,
+@@ -861,7 +861,7 @@
+       child = node.subtitles
+     })
+     node.screenshot = IconButton({name = "screenshot-button", icon = "photo_camera",
+-      horizontal_padding = 6, tooltip = "Take Screenshot",
++      horizontal_padding = 6, tooltip = "截图",
+       shortcut = "screenshot",
+       on_click = function() mp.commandv("screenshot", "subtitles") end})
+     node.screenshot_visibility = Visibility({
+@@ -869,27 +869,27 @@
+       child = node.screenshot
+     })
+     node.settings = IconButton({name = "settings-button", icon = "settings",
+-      horizontal_padding = 6, tooltip = "Settings",
++      horizontal_padding = 6, tooltip = "设置",
+       shortcut = "open-settings",
+       on_click = function()
+         set_settings_dialog_open(not settings_state.open)
+       end})
+     node.pip = IconButton({name = "picture-in-picture-button",
+       icon = "picture_in_picture_alt", horizontal_padding = 6,
+-      tooltip = "Picture in Picture",
++      tooltip = "画中画",
+       on_click = function() set_pip_enabled(not state.pip.active) end})
+     node.pip_visibility = Visibility({
+       visible = config.opts.pip_button,
+       child = node.pip
+     })
+     node.fullscreen = IconButton({name = "fullscreen-button",
+-      icon = "open_in_full", horizontal_padding = 6, tooltip = "Fullscreen",
++      icon = "open_in_full", horizontal_padding = 6, tooltip = "全屏",
+       shortcut = "fullscreen",
+       on_click = function() mp.commandv("cycle", "fullscreen") end})
+     -- pin button: keeps the window on top at its current size (picture-in-picture
+     -- has its own button)
+     node.ontop = IconButton({name = "ontop-button", icon = "keep_off",
+-      horizontal_padding = 6, tooltip = "Pin Window", shortcut = "ontop",
++      horizontal_padding = 6, tooltip = "窗口置顶", shortcut = "ontop",
+       on_click = function() mp.commandv("cycle", "ontop") end})
+     node.ontop_visibility = Visibility({
+       visible = config.opts.ontop_button,
+@@ -897,7 +897,7 @@
+     })
+     -- info button, runs info_mbtn_left_command (the stats overlay by default)
+     node.info = IconButton({name = "info-button", icon = "info",
+-      horizontal_padding = 6, tooltip = "Information",
++      horizontal_padding = 6, tooltip = "信息",
+       on_click = function() mp.command(config.opts.info_mbtn_left_command) end})
+     node.info_visibility = Visibility({
+       visible = config.opts.info_button,
+@@ -931,7 +931,7 @@
+       if static_changed then
+         self.play:update({
+           icon = snapshot.paused and "play_arrow" or "pause",
+-          tooltip = snapshot.paused and "Play" or "Pause"
++          tooltip = snapshot.paused and "播放" or "暂停"
+         })
+       end
+       if static_changed and config.opts.prev_next_beside_play then
+@@ -969,21 +969,21 @@
+         self.subtitles_visibility:set_visible(#snapshot.subtitle_items > 1)
+         self.subtitles:update({
+           icon = subtitles_on and "subtitles" or "subtitles_off",
+-          tooltip = subtitles_on and "Hide Subtitles" or "Show Subtitles"
++          tooltip = subtitles_on and "隐藏字幕" or "显示字幕"
+         })
+         self.pip:update({
+           icon = state.pip.active and "pip_exit" or "picture_in_picture_alt",
+           tooltip = state.pip.active and
+-            "Exit Picture in Picture" or "Picture in Picture"
++            "退出画中画" or "画中画"
+         })
+         self.fullscreen:update({
+           icon = snapshot.fullscreen and "close_fullscreen" or "open_in_full",
+-          tooltip = snapshot.fullscreen and "Exit Fullscreen" or "Fullscreen"
++          tooltip = snapshot.fullscreen and "退出全屏" or "全屏"
+         })
+         local pinned = snapshot.ontop == true
+         self.ontop:update({
+           icon = pinned and "keep" or "keep_off",
+-          tooltip = pinned and "Unpin Window" or "Pin Window"
++          tooltip = pinned and "取消置顶" or "窗口置顶"
+         })
+       end
+     end
+@@ -1049,7 +1049,7 @@
+       })
+     })
+     node.label = TextItem({
+-      text = "Exit PiP", size = 20,
++      text = "退出画中画", size = 20,
+       modifier = Modifier():padding({ending = dp(6)})
+     })
+     node.pill = Pill({
+@@ -1079,7 +1079,7 @@
+       name = "window-minimize-button", icon = "minimize", size = 22,
+       render_pass = "interaction", ignore_controller_fade = true,
+       tooltip_allow_when_suppressed = true,
+-      horizontal_padding = 6, tooltip = "Minimize",
++      horizontal_padding = 6, tooltip = "最小化",
+       on_click = function() mp.set_property_bool("window-minimized", true) end
+     })
+     node.maximize = IconButton({
+@@ -1087,7 +1087,7 @@
+       render_pass = "interaction", ignore_controller_fade = true,
+       tooltip_allow_when_suppressed = true,
+       icon_size = 18, horizontal_padding = 6,
+-      tooltip = "Maximize",
++      tooltip = "最大化",
+       on_click = function()
+         if state.pip.active then
+           set_pip_enabled(false)
+@@ -1102,10 +1102,10 @@
+       name = "window-close-button", icon = "close", size = 22,
+       render_pass = "interaction", ignore_controller_fade = true,
+       tooltip_allow_when_suppressed = true,
+-      horizontal_padding = 6, hover_icon_color = "#000000", tooltip = "Close",
++      horizontal_padding = 6, hover_icon_color = "#000000", tooltip = "关闭",
+       on_click = function() mp.commandv("quit") end
+     })
+-    node.close.modifier.hover_color = "#FF5263"
++    node.close.modifier.hover_color = "#FFB4AB"
+     node.close.modifier.hover_alpha = "40"
+     node.pill = Pill({
+       gap = 0,
+@@ -1113,7 +1113,7 @@
+     })
+     node.pill.modifier.render_pass = "interaction"
+     node.pill.modifier.ignore_controller_fade = true
+-    node.pill_base_alpha = node.pill.modifier.background_alpha or "58"
++    node.pill_base_alpha = node.pill.modifier.background_alpha or "00"
+     node.buttons = {node.minimize, node.maximize, node.close}
+     for _, button in ipairs(node.buttons) do
+       button.window_hover_alpha = button.modifier.hover_alpha
+@@ -1139,8 +1139,8 @@
+       local restored = snapshot.fullscreen or snapshot.window_maximized
+       self.maximize:update({
+         icon = restored and "filter_none" or "crop_square",
+-        tooltip = snapshot.fullscreen and "Exit Fullscreen" or
+-          (snapshot.window_maximized and "Restore" or "Maximize")
++        tooltip = snapshot.fullscreen and "退出全屏" or
++          (snapshot.window_maximized and "还原" or "最大化")
+       })
+     end
+ 
+diff -ruN a/src/ui/components/edge_seek.lua b/src/ui/components/edge_seek.lua
+--- a/src/ui/components/edge_seek.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/ui/components/edge_seek.lua	2026-11-09 20:17:45.833468473 +0800
+@@ -55,7 +55,7 @@
+     local feedback = visual.feedback.value
+     local icon_x = cx + direction * dp(14) * feedback
+     local icon_size = 64 * (1 + 0.12 * feedback)
+-    ui.draw_icon(ass, icon_x, cy, icon, "#FFFFFF", icon_size, alpha, true)
++    ui.draw_icon(ass, icon_x, cy, icon, "#E6E0E9", icon_size, alpha, true)
+ 
+     if state.pip.active then return end
+ 
+@@ -64,9 +64,9 @@
+     local pill_y = cy + dp(48)
+     ui.draw_box(ass, cx - pill_w / 2, pill_y,
+       cx + pill_w / 2, pill_y + pill_h, pill_h / 2,
+-      "#050708", ui.alpha(opacity * 0.90), true)
++      "#211F26", ui.alpha(opacity), true)
+     ui.draw_text(ass, cx, pill_y + pill_h / 2, label, 22,
+-      "#FFFFFF", alpha, ui.default_text_font, nil, nil, true)
++      "#E6E0E9", alpha, ui.default_text_font, nil, nil, true)
+   end
+ 
+   function service:draw(ass, root)
+diff -ruN a/src/ui/components/empty_state.lua b/src/ui/components/empty_state.lua
+--- a/src/ui/components/empty_state.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/ui/components/empty_state.lua	2026-11-09 20:19:05.503671042 +0800
+@@ -1,7 +1,7 @@
+ local empty_state = {}
+ 
+ function empty_state.new(services)
+-  local background_color = "#111318"
++  local background_color = "#141218"
+   local ui = services.ui
+   local dp, alpha, lerp = ui.dp, ui.alpha, ui.lerp
+   local Modifier, apply_modifier_size = ui.Modifier, ui.apply_modifier_size
+@@ -33,7 +33,7 @@
+     "the narwhal bacons at midnight", "reddit hug of death",
+     "404 sleep not found", "there are 10 types of people", "ඞ"
+   }
+-  local marquee_color = "#E2E2E6"
++  local marquee_color = "#E6E0E9"
+   local marquee_hover_opacity = 0.10
+   local marquee_hover_duration = 0.3
+   local marquee_hover_states = {}
+@@ -110,7 +110,7 @@
+     local collected, count, reason = services.easter_eggs:collect(item.text)
+     if not collected then
+       if reason == "save-failed" then
+-        services.toast:error("Could not save collection", {
++        services.toast:error("无法保存收藏", {
+           show_on_empty = true
+         })
+       end
+@@ -353,7 +353,7 @@
+         "#44474E", "00", true)
+       if hovered then
+         draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-          bounds.h / 2, "#E2E2E6", "E5", true)
++          bounds.h / 2, "#E6E0E9", "E5", true)
+       end
+       local content_scale = math.min(1, bounds.h / math.max(dp(52), 1))
+       local label_size, icon_size = 22 * content_scale, 24 * content_scale
+@@ -363,10 +363,10 @@
+       local icon_x = bounds.x + (bounds.w - content_width) / 2 +
+         dp(icon_size) / 2
+       draw_icon(ass, icon_x, bounds.y + bounds.h / 2,
+-        self.icon, "#E2E2E6", icon_size, "00", true)
++        self.icon, "#E6E0E9", icon_size, "00", true)
+       draw_text(ass, icon_x + dp(icon_size) / 2 + content_gap,
+         bounds.y + bounds.h / 2, self.label, label_size,
+-        "#E2E2E6", "00", default_text_font, 4, false, true)
++        "#E6E0E9", "00", default_text_font, 4, false, true)
+     end
+ 
+     return node
+@@ -401,7 +401,7 @@
+       local hovered = self.interactive and ui.mouse_in(bounds)
+       draw_text(ass, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2,
+         self.label, 30 * (bounds.h / math.max(dp(44), 1)),
+-        hovered and "#FFFFFF" or "#CAC4D0", alpha(node.opacity or 1),
++        hovered and "#E6E0E9" or "#CAC4D0", alpha(node.opacity or 1),
+         default_text_font, 5, 200, true)
+     end
+ 
+@@ -522,13 +522,13 @@
+   node.files = ActionButton({
+     name = "empty-state-files",
+     icon = "folder_open",
+-    label = "File(s)",
++    label = "文件",
+     on_click = services.player.open_media_files
+   })
+   node.link = ActionButton({
+     name = "empty-state-link",
+     icon = "link",
+-    label = "Link",
++    label = "链接",
+     on_click = services.player.open_media_link
+   })
+   local function open_repository()
+@@ -615,7 +615,7 @@
+       local text_x = lockup_x + logo_size + logo_gap
+       draw_text(ass, text_x,
+         top + logo_size / 2 - dp(30) * layout_scale,
+-        "mpv", mpv_size, "#FFFFFF", content_alpha,
++        "mpv", mpv_size, "#E6E0E9", content_alpha,
+         default_text_font, 4, false, true, nil,
+         {weight = 200, x_scale = mpv_x_scale})
+       draw_text(ass, text_x,
+diff -ruN a/src/ui/components/media_information_close.lua b/src/ui/components/media_information_close.lua
+--- a/src/ui/components/media_information_close.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/ui/components/media_information_close.lua	2026-11-09 20:17:45.833924799 +0800
+@@ -26,13 +26,13 @@
+ 
+   function node.button:draw(ass, bounds)
+     ui.draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-      bounds.h / 2, "#050708", ui.alpha(0.92), true)
++      bounds.h / 2, "#211F26", ui.alpha(0.92), true)
+     if ui.mouse_in(bounds) then
+       ui.draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-        bounds.h / 2, "#FFFFFF", ui.alpha(0.16), true)
++        bounds.h / 2, "#E6E0E9", ui.alpha(0.16), true)
+     end
+     ui.draw_icon(ass, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2,
+-      "close", "#FFFFFF", icon_size / ui.dpi_scale(), ui.alpha(1), true)
++      "close", "#E6E0E9", icon_size / ui.dpi_scale(), ui.alpha(1), true)
+   end
+ 
+   function node:update()
+diff -ruN a/src/ui/components/playback_indicator.lua b/src/ui/components/playback_indicator.lua
+--- a/src/ui/components/playback_indicator.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/ui/components/playback_indicator.lua	2026-11-09 20:19:05.504476819 +0800
+@@ -7,7 +7,7 @@
+ 
+   function service:show(icon, label, now, label_color)
+     state.icon, state.label = icon, label
+-    state.label_color = label_color or "#FFFFFF"
++    state.label_color = label_color or "#E6E0E9"
+     state.pill_only, state.show_on_empty = false, false
+     state.opacity:snap(0); state.scale:snap(0.8)
+     state.scale:set_target(1); state.opacity:set_target(1, now, 0.09)
+@@ -22,7 +22,7 @@
+       options = {show_on_empty = options == true}
+     end
+     state.icon, state.label = icon, label
+-    state.label_color = options.label_color or "#FFFFFF"
++    state.label_color = options.label_color or "#E6E0E9"
+     state.pill_only = true
+     state.show_on_empty = options.show_on_empty == true
+     state.opacity:snap(0); state.scale:snap(0.92)
+@@ -51,8 +51,8 @@
+       local muted = snapshot.muted or volume <= 0
+       self:show(muted and "volume_off" or
+         (volume < 50 and "volume_down" or "volume_up"),
+-        muted and "Muted" or tostring(volume) .. "%", now,
+-        volume > 100 and "#FF9800" or "#FFFFFF")
++        muted and "已静音" or tostring(volume) .. "%", now,
++        volume > 100 and "#FF9800" or "#E6E0E9")
+     end
+ 
+     local subtitle_id = snapshot.subtitle_id or 0
+@@ -64,11 +64,11 @@
+       state.last_sub_visibility ~= subtitle_visible then
+       state.last_subtitle_id = subtitle_id
+       state.last_sub_visibility = subtitle_visible
+-      local label = "Subtitles off"
++      local label = "字幕关闭"
+       if subtitle_id ~= 0 and subtitle_visible then
+         for _, item in ipairs(snapshot.subtitle_items or {}) do
+           if item.id == subtitle_id then
+-            label = item.label or ("Subtitle " .. tostring(subtitle_id))
++            label = item.label or ("字幕 " .. tostring(subtitle_id))
+             break
+           end
+         end
+@@ -110,9 +110,9 @@
+       local x1, x2 = cx - pill_w / 2, cx + pill_w / 2
+       local y1, y2 = cy - pill_h / 2, cy + pill_h / 2
+       ui.draw_box(ass, x1, y1, x2, y2, pill_h / 2,
+-        "#050708", ui.alpha(opacity * 0.92), true)
++        "#211F26", ui.alpha(opacity), true)
+       local icon_x = x1 + horizontal_padding + icon_size / 2
+-      ui.draw_icon(ass, icon_x, cy, state.icon, "#FFFFFF", 26 * scale,
++      ui.draw_icon(ass, icon_x, cy, state.icon, "#E6E0E9", 26 * scale,
+         ui.alpha(opacity), true)
+       ui.draw_text(ass, icon_x + icon_size / 2 + gap, cy,
+         state.label, 26 * scale, state.label_color, ui.alpha(opacity),
+@@ -123,8 +123,8 @@
+     local cx, cy = bounds.x + bounds.w / 2, bounds.y + bounds.h / 2
+     ui.draw_box(ass, cx - size / 2, cy - size / 2,
+       cx + size / 2, cy + size / 2, size / 2,
+-      "#050708", ui.alpha(opacity * 0.72), true)
+-    ui.draw_icon(ass, cx, cy, state.icon, "#FFFFFF", 96 * scale,
++      "#211F26", ui.alpha(opacity), true)
++    ui.draw_icon(ass, cx, cy, state.icon, "#E6E0E9", 96 * scale,
+       ui.alpha(opacity), true)
+     if state.label then
+       local pill_h = dp(54) * scale
+@@ -132,7 +132,7 @@
+       local pill_y = cy + size / 2 + dp(12) * scale
+       ui.draw_box(ass, cx - pill_w / 2, pill_y,
+         cx + pill_w / 2, pill_y + pill_h, pill_h / 2,
+-        "#050708", ui.alpha(opacity * 0.82), true)
++        "#211F26", ui.alpha(opacity), true)
+       ui.draw_text(ass, cx, pill_y + pill_h / 2, state.label, 28 * scale,
+         state.label_color, ui.alpha(opacity), ui.default_text_font,
+         nil, nil, true)
+diff -ruN a/src/ui/components/playlist.lua b/src/ui/components/playlist.lua
+--- a/src/ui/components/playlist.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/ui/components/playlist.lua	2026-11-09 21:16:03.798690766 +0800
+@@ -84,28 +84,28 @@
+       local hovered = self.interactive and mouse_in(bounds)
+       if self.item.current or dragging then
+         draw_box(ass, bounds.x, bounds.y + dp(2), bounds.x2, bounds.y2 - dp(2),
+-          dp(24), self.item.current and services.config.opts.accent_color or "#FFFFFF",
++          dp(24), self.item.current and services.config.opts.accent_color or "#E6E0E9",
+           dragging and self.hover_alpha or self.selected_alpha)
+       elseif hovered then
+         draw_box(ass, bounds.x, bounds.y + dp(2), bounds.x2, bounds.y2 - dp(2),
+-          dp(24), "#FFFFFF", self.hover_alpha)
++          dp(24), "#E6E0E9", self.hover_alpha)
+       end
+       draw_icon(ass, bounds.x + dp(20), bounds.y + bounds.h / 2,
+         "drag_indicator", "#CAC4D0", 22, self.secondary_alpha)
+       if self.item.current then
+         draw_icon(ass, bounds.x + dp(48), bounds.y + bounds.h / 2,
+-          "play_arrow", "#FFFFFF", 22, self.text_alpha)
++          "play_arrow", "#E6E0E9", 22, self.text_alpha)
+       else
+         draw_text(ass, bounds.x + dp(48), bounds.y + bounds.h / 2,
+           tostring(self.index), 19, "#CAC4D0", self.secondary_alpha,
+           default_text_font)
+       end
+-      local title = self.item.title or ("Item " .. tostring(self.index))
++      local title = self.item.title or ("项目 " .. tostring(self.index))
+       local title_x = bounds.x + dp(68)
+       title = truncate_to_width(title,
+         math.max(0, bounds.x2 - dp(16) - title_x), 22)
+       draw_text(ass, title_x, bounds.y + bounds.h / 2,
+-        title, 22, "#FFFFFF", self.text_alpha, default_text_font, 4)
++        title, 22, "#E6E0E9", self.text_alpha, default_text_font, 4)
+     end
+     return node
+   end
+@@ -135,17 +135,17 @@
+     end
+     function node:draw(ass, bounds)
+       draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2, bounds.h / 2,
+-        "#FFFFFF", alpha(self.opacity * 0.12))
++        "#E6E0E9", alpha(self.opacity * 0.12))
+       local icon_size, label_size, gap = 22, 22, dp(4)
+       local label_width = ui.text_width(self.label, label_size)
+       local content_width = dp(icon_size) + gap + label_width
+       local icon_x = bounds.x + (bounds.w - content_width) / 2 +
+         dp(icon_size) / 2
+       draw_icon(ass, icon_x, bounds.y + bounds.h / 2,
+-        self.icon, "#FFFFFF", icon_size, alpha(self.opacity))
++        self.icon, "#E6E0E9", icon_size, alpha(self.opacity))
+       draw_text(ass, icon_x + dp(icon_size) / 2 + gap,
+         bounds.y + bounds.h / 2,
+-        self.label, label_size, "#FFFFFF", alpha(self.opacity),
++        self.label, label_size, "#E6E0E9", alpha(self.opacity),
+         default_text_font, 4)
+     end
+     return node
+@@ -211,10 +211,10 @@
+       local thumb_h, thumb_y = thumb_metrics(bounds)
+       draw_box(ass, center_x - track_w / 2, bounds.y,
+         center_x + track_w / 2, bounds.y2, track_w / 2,
+-        "#FFFFFF", alpha(self.opacity * 0.14))
++        "#E6E0E9", alpha(self.opacity * 0.14))
+       draw_box(ass, center_x - thumb_w / 2, thumb_y,
+         center_x + thumb_w / 2, thumb_y + thumb_h, thumb_w / 2,
+-        "#FFFFFF", alpha(self.opacity * (hovered and 0.82 or 0.58)))
++        "#E6E0E9", alpha(self.opacity * (hovered and 0.82 or 0.58)))
+     end
+     return node
+   end
+@@ -230,17 +230,17 @@
+     for slot = 1, 18 do node.rows[slot] = PlaylistRow(slot) end
+     node.scrollbar = PlaylistScrollbar()
+     node.add_files = AddMediaButton("playlist-add-files", "add",
+-      "File(s)", services.player.append_media_files)
++      "文件", services.player.append_media_files)
+     node.add_link = AddMediaButton("playlist-add-link", "link",
+-      "Link", services.player.append_media_link)
+-    node.shuffle = FooterButton("playlist-shuffle", "shuffle", "Shuffle",
++      "链接", services.player.append_media_link)
++    node.shuffle = FooterButton("playlist-shuffle", "shuffle", "随机播放",
+       function()
+         local shuffled = playlist_state.shuffled == true
+         mp.commandv(shuffled and "playlist-unshuffle" or "playlist-shuffle")
+         playlist_state.shuffled = not shuffled
+         render()
+       end, nil, true, 28)
+-    node.loop = FooterButton("playlist-loop", "repeat", "Loop: off",
++    node.loop = FooterButton("playlist-loop", "repeat", "循环：关闭",
+       function()
+         local mode = (state.snapshot or {}).playlist_loop_mode or "off"
+         if mode == "off" then
+@@ -261,15 +261,15 @@
+       self.visible_rows = visible_rows or 1
+       self.shuffle:update({
+         icon = snapshot.playlist_shuffled and "shuffle_on" or "shuffle",
+-        tooltip = snapshot.playlist_shuffled and "Turn Shuffle Off" or "Shuffle",
++        tooltip = snapshot.playlist_shuffled and "关闭随机播放" or "随机播放",
+         alpha = alpha(opacity)
+       })
+       local loop_mode = snapshot.playlist_loop_mode or "off"
+       self.loop:update({
+         icon = loop_mode == "one" and "repeat_one_on" or
+           (loop_mode == "all" and "repeat_on" or "repeat"),
+-        tooltip = loop_mode == "one" and "Loop: Current Item" or
+-          (loop_mode == "all" and "Loop: Playlist" or "Loop: Off"),
++        tooltip = loop_mode == "one" and "循环：当前项" or
++          (loop_mode == "all" and "循环：播放列表" or "循环：关闭"),
+         alpha = alpha(opacity)
+       })
+       self.shuffle.modifier.pointer_enabled = interactive
+@@ -307,7 +307,7 @@
+         w = button_w, h = link_size.h
+       }))
+       draw_rect(ass, header.x, header.y2 - dp(1), header.x2, header.y2,
+-        "#FFFFFF", alpha(self.opacity * 0.16))
++        "#E6E0E9", alpha(self.opacity * 0.16))
+ 
+       local list_area = Rect({x = bounds.x + padding,
+         y = bounds.y + header_h + padding,
+@@ -369,7 +369,7 @@
+       local button_y = footer.y + dp(5)
+       local loop_x = footer.x2 - dp(5) - button_size.w
+       draw_rect(ass, footer.x, footer.y, footer.x2,
+-        footer.y + dp(1), "#FFFFFF", alpha(self.opacity * 0.16))
++        footer.y + dp(1), "#E6E0E9", alpha(self.opacity * 0.16))
+       draw_node(self.shuffle, ass, Rect({x = loop_x - button_size.w - button_gap,
+         y = button_y,
+         w = button_size.w, h = button_size.h}))
+@@ -419,11 +419,11 @@
+     }
+     node.backdrop = Backdrop()
+     node.content = ExpandedContent()
+-    node.playlist = FooterButton("playlist-button", "playlist_play", "Playlist",
++    node.playlist = FooterButton("playlist-button", "playlist_play", "播放列表",
+       function() set_open(not playlist_state.open) end, "open-playlist", true)
+-    node.previous = FooterButton("playlist-previous", "skip_previous", "Previous",
++    node.previous = FooterButton("playlist-previous", "skip_previous", "上一个",
+       previous_item, "playlist-prev", true)
+-    node.next = FooterButton("playlist-next", "skip_next", "Next", next_item,
++    node.next = FooterButton("playlist-next", "skip_next", "下一个", next_item,
+       "playlist-next", true)
+ 
+     -- previous/next move beside play/pause with prev_next_beside_play
+@@ -479,7 +479,7 @@
+         transition_icon = "menu_open",
+         transition_progress = self.morph,
+         alpha = alpha(self.controls_opacity),
+-        tooltip = self.morph < 0.5 and "Playlist" or "Collapse"
++        tooltip = self.morph < 0.5 and "播放列表" or "折叠"
+       })
+       self.previous:update({
+         alpha = alpha(self.controls_opacity),
+@@ -559,8 +559,8 @@
+       if self.morph == 0 and not playlist_state.open and
+         not morphing then
+         draw_box(ass, source.x, source.y, source.x2, source.y2,
+-          source.h / 2, "#050708",
+-          alpha(self.controls_opacity * (1 - 0x58 / 255)))
++          source.h / 2, "#211F26",
++          alpha(self.controls_opacity))
+         draw_control_buttons(ass, source, source, 0)
+       end
+       local title = self.snapshot.media_title or ""
+@@ -570,7 +570,7 @@
+         trailing_bounds.x - title_x - trailing_gap)
+       title = truncate_to_width(title, available, 24)
+       ui.draw_shadowed_text(ass, title_x, bounds.y + bounds.h / 2,
+-        title, 24, "#FFFFFF", alpha(self.controls_opacity),
++        title, 24, "#E6E0E9", alpha(self.controls_opacity),
+         default_text_font, 4)
+       if trailing_size.w > 0 then
+         draw_node(self.trailing, ass, trailing_bounds)
+@@ -592,7 +592,7 @@
+           -- frame; the queued full render replaces it without a blank flash.
+           playlist_state.handoff = true
+           draw_box(ass, source.x, source.y, source.x2, source.y2,
+-            source.h / 2, "#050708", "58")
++            source.h / 2, "#211F26", "00")
+           draw_control_buttons(ass, source, source, 0)
+         else
+           playlist_state.handoff = false
+@@ -626,11 +626,11 @@
+       -- The playlist morphs back into a persistent pill, unlike the context
+       -- menu which closes into empty space. Preserve the pill's base opacity
+       -- throughout the handoff so it never dims and then pops back in.
+-      local shell_opacity = 0.65 + self.morph * 0.27
++      local shell_opacity = 1
+       local top_radius = dp(21) + dp(9) * control_progress
+       local bottom_radius = dp(21)
+       draw_round_box(ass, surface.x, surface.y, surface.x2, surface.y2,
+-        top_radius, bottom_radius, "#050708", alpha(shell_opacity))
++        top_radius, bottom_radius, "#211F26", alpha(shell_opacity))
+       push_clip(surface)
+       draw_node(self.content, ass, surface)
+       pop_clip()
+diff -ruN a/src/ui/components/popup_factories.lua b/src/ui/components/popup_factories.lua
+--- a/src/ui/components/popup_factories.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/ui/components/popup_factories.lua	2026-11-09 21:01:15.237397893 +0800
+@@ -54,7 +54,7 @@
+     function node.edit:draw(ass, bounds)
+       if node.interactive and mouse_in(bounds) then
+         draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-          bounds.h / 2, "#FFFFFF", node.hover_alpha)
++          bounds.h / 2, "#E6E0E9", node.hover_alpha)
+       end
+       draw_icon(ass, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2,
+         "edit", "#CAC4D0", 20, node.secondary_alpha)
+@@ -65,7 +65,7 @@
+     function node.remove:draw(ass, bounds)
+       if node.interactive and mouse_in(bounds) then
+         draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-          bounds.h / 2, "#FFFFFF", node.hover_alpha)
++          bounds.h / 2, "#E6E0E9", node.hover_alpha)
+       end
+       draw_icon(ass, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2,
+         "delete", "#CAC4D0", 20, node.secondary_alpha)
+@@ -113,7 +113,7 @@
+              opts.accent_color, self.text_alpha)
+       elseif hovered then
+         draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-             bounds.h / 2, "#FFFFFF", self.hover_alpha)
++             bounds.h / 2, "#E6E0E9", self.hover_alpha)
+       end
+       local seek_time = tonumber(self.chapter.time) or 0
+       local time_text = format_time(seek_time)
+@@ -125,11 +125,11 @@
+       local title_available_w = math.max(0, time_left - dp(16) - title_x)
+       local title = self.chapter.title
+       if type(title) ~= "string" or title:match("^%s*$") then
+-        title = "Chapter " .. tostring(self.chapter_index)
++        title = "章节 " .. tostring(self.chapter_index)
+       end
+       title = truncate_to_width(title, title_available_w, title_size)
+       draw_text(ass, title_x, bounds.y + bounds.h / 2,
+-            title, title_size, "#FFFFFF", self.text_alpha,
++            title, title_size, "#E6E0E9", self.text_alpha,
+             default_text_font, 4)
+       draw_text(ass, time_right, bounds.y + bounds.h / 2, time_text, 24,
+             self.selected and opts.accent_color or "#CAC4D0",
+@@ -261,10 +261,10 @@
+       local thumb_h, thumb_y = metrics(bounds)
+       draw_box(ass, center_x - track_w / 2, bounds.y,
+         center_x + track_w / 2, bounds.y2, track_w / 2,
+-        "#FFFFFF", ass_alpha_for_opacity(self.opacity * 0.14))
++        "#E6E0E9", ass_alpha_for_opacity(self.opacity * 0.14))
+       draw_box(ass, center_x - thumb_w / 2, thumb_y,
+         center_x + thumb_w / 2, thumb_y + thumb_h, thumb_w / 2,
+-        "#FFFFFF", ass_alpha_for_opacity(
++        "#E6E0E9", ass_alpha_for_opacity(
+           self.opacity * (hovered and 0.82 or 0.58)))
+     end
+     return node
+@@ -377,7 +377,7 @@
+     end
+     function node:draw(ass, bounds)
+       draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-           dp(30), "#050708", self.panel_alpha)
++           dp(30), "#211F26", "00")
+       local header_h = dp(56)
+       draw_node(self.header, ass, Rect({x = bounds.x, y = bounds.y, w = bounds.w, h = header_h}))
+       draw_node(self.list, ass, Rect({
+@@ -436,7 +436,7 @@
+     function node.action:draw(ass, bounds)
+       if node.interactive and mouse_in(bounds) then
+         draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-          bounds.h / 2, "#FFFFFF", node.hover_alpha)
++          bounds.h / 2, "#E6E0E9", node.hover_alpha)
+       end
+       draw_icon(ass, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2,
+         node.item.action_icon, "#CAC4D0", 20, node.secondary_alpha)
+@@ -457,7 +457,7 @@
+       if not self.item then return end
+       if self.item.separator then
+         local center_y = bounds.y + bounds.h / 2
+-        local label = self.item.label or "Images"
++        local label = self.item.label or "图片"
+         local line_gap, label_width = dp(10), dp(82)
+         draw_rect(ass, bounds.x + dp(12), center_y,
+           bounds.x + (bounds.w - label_width) / 2 - line_gap, center_y + dp(1),
+@@ -472,7 +472,7 @@
+       local hovered = self.interactive and mouse_in(bounds)
+       if self.active or hovered then
+         draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-          bounds.h / 2, self.active and opts.accent_color or "#FFFFFF",
++          bounds.h / 2, self.active and opts.accent_color or "#E6E0E9",
+           self.active and self.selected_alpha or self.hover_alpha)
+       end
+       if self.active then
+@@ -499,7 +499,7 @@
+         bounds.y + bounds.h / 2 - (has_details and dp(7) or 0),
+         truncate_to_width(self.item.label, text_available_w,
+           has_details and 20 or 24),
+-        has_details and 20 or 24, "#FFFFFF", self.text_alpha,
++        has_details and 20 or 24, "#E6E0E9", self.text_alpha,
+         default_text_font, 4)
+       if has_details then
+         draw_text(ass, text_x, bounds.y + bounds.h / 2 + dp(9),
+@@ -542,13 +542,13 @@
+     function node:draw(ass, bounds)
+       if self.interactive and mouse_in(bounds) then
+         draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-          bounds.h / 2, "#FFFFFF", self.hover_alpha)
++          bounds.h / 2, "#E6E0E9", self.hover_alpha)
+       end
+       local center_x = bounds.x + bounds.w / 2
+       draw_icon(ass, center_x - dp(26), bounds.y + bounds.h / 2,
+-        icon, "#FFFFFF", 24, self.text_alpha)
++        icon, "#E6E0E9", 24, self.text_alpha)
+       draw_text(ass, center_x + dp(10), bounds.y + bounds.h / 2,
+-        self.label, 22, "#FFFFFF", self.text_alpha, default_text_font)
++        self.label, 22, "#E6E0E9", self.text_alpha, default_text_font)
+     end
+     return node
+   end
+@@ -632,7 +632,7 @@
+     end
+     function node:draw(ass, bounds)
+       draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-        dp(30), "#050708", self.panel_alpha)
++        dp(30), "#211F26", "00")
+       local header_h = dp(56)
+       draw_node(self.header, ass, Rect({x = bounds.x, y = bounds.y,
+         w = bounds.w, h = header_h}))
+@@ -672,7 +672,7 @@
+ 
+   local function SubtitlePopup(on_close)
+     return TrackPopup(on_close, {
+-      name = "subtitle-dialog", title = "Subtitles", state = subtitle_state,
++      name = "subtitle-dialog", title = "字幕", state = subtitle_state,
+       on_select = function(item)
+         if item.id == 0 then
+           mp.set_property("sid", "no")
+@@ -686,7 +686,7 @@
+ 
+   local function AudioPopup(on_close)
+     return TrackPopup(on_close, {
+-      name = "audio-dialog", title = "Audio", state = audio_state,
++      name = "audio-dialog", title = "音频", state = audio_state,
+       on_select = function(item)
+         if item.id == 0 then mp.set_property("aid", "no")
+         else mp.set_property_number("aid", tonumber(item.id)) end
+diff -ruN a/src/ui/components/popups.lua b/src/ui/components/popups.lua
+--- a/src/ui/components/popups.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/ui/components/popups.lua	2026-11-09 21:18:46.907106718 +0800
+@@ -152,8 +152,8 @@
+   end
+ 
+   local function morph_shell_opacity(open, fade)
+-    return open and (0.53 + clamp(fade, 0, 1) * 0.43) or
+-      clamp(fade, 0, 1) * 0.96
++    return open and (0.53 + clamp(fade, 0, 1) * 0.47) or
++      clamp(fade, 0, 1) * 1.0
+   end
+ 
+   local function ChapterCloseButton(args)
+@@ -163,7 +163,7 @@
+       enabled = false,
+       on_click = args.on_click,
+       icon = args.icon or "close",
+-      tooltip = args.tooltip or (args.icon == "arrow_back" and "Back" or "Close"),
++      tooltip = args.tooltip or (args.icon == "arrow_back" and "返回" or "关闭"),
+       shortcut = args.shortcut,
+       modifier = Modifier():width(dp(36)):height(dp(36))
+     }
+@@ -199,10 +199,10 @@
+     function node:draw(ass, bounds)
+       if self.enabled and mouse_in(bounds) then
+         draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-             bounds.h / 2, "#FFFFFF", self.hover_alpha)
++             bounds.h / 2, "#E6E0E9", self.hover_alpha)
+       end
+       draw_icon(ass, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2,
+-           self.icon, "#FFFFFF", 24, self.alpha)
++           self.icon, "#E6E0E9", 24, self.alpha)
+       local tooltip = type(self.tooltip) == "function" and
+         self.tooltip() or self.tooltip
+       local visible = (tonumber(self.alpha or "FF", 16) or 255) < 250
+@@ -219,7 +219,7 @@
+       :gsub("[^%w]+", "-"):gsub("^%-+", ""):gsub("%-+$", "")
+     local node = {
+       alpha = "00", title_alpha = "00", hover_alpha = "E6", interactive = false,
+-      title = title or "Chapters",
++      title = title or "章节",
+       action_on_left = action_icon == "arrow_back",
+       actions = {},
+       modifier = Modifier():fillMaxWidth():height(dp(56))
+@@ -261,7 +261,7 @@
+     function node:draw(ass, bounds)
+       local title_x = bounds.x + dp(self.action_on_left and 50 or 22)
+       draw_text(ass, title_x, bounds.y + bounds.h / 2,
+-            self.title, 24, "#FFFFFF", self.title_alpha, default_text_font, 4)
++            self.title, 24, "#E6E0E9", self.title_alpha, default_text_font, 4)
+       local close_size = dp(36)
+       draw_node(self.close, ass, Rect({
+         x = self.action_on_left and (bounds.x + dp(6)) or
+@@ -284,7 +284,7 @@
+       if self.action_on_left then
+         local header_opacity = 1 - (tonumber(self.alpha, 16) or 255) / 255
+         draw_rect(ass, bounds.x, bounds.y2 - dp(1), bounds.x2, bounds.y2,
+-          "#FFFFFF", ass_alpha_for_opacity(header_opacity * 0.18))
++          "#E6E0E9", ass_alpha_for_opacity(header_opacity * 0.18))
+       end
+     end
+     return node
+@@ -340,13 +340,13 @@
+     function node:draw(ass, bounds)
+       if self.interactive and mouse_in(bounds) then
+         draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-          bounds.h / 2, "#FFFFFF", self.hover_alpha)
++          bounds.h / 2, "#E6E0E9", self.hover_alpha)
+       end
+       draw_icon(ass, bounds.x + dp(28), bounds.y + bounds.h / 2,
+-        self.icon, "#FFFFFF", 24, self.text_alpha)
++        self.icon, "#E6E0E9", 24, self.text_alpha)
+       local label_x = bounds.x + dp(52)
+       draw_text(ass, label_x, bounds.y + bounds.h / 2,
+-        self.label, 22, "#FFFFFF", self.text_alpha, default_text_font, 4)
++        self.label, 22, "#E6E0E9", self.text_alpha, default_text_font, 4)
+       if self.loading then
+         draw_loading_shape_morph(ass, bounds.x2 - dp(24),
+           bounds.y + bounds.h / 2, dp(22))
+@@ -384,9 +384,9 @@
+       local alpha = selected and self.selected_alpha or
+         (self.interactive and mouse_in(bounds) and self.hover_alpha or "D8")
+       draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-        bounds.h / 2, selected and opts.accent_color or "#FFFFFF", alpha)
++        bounds.h / 2, selected and "#4F378B" or "#E6E0E9", alpha)
+       draw_text(ass, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2,
+-        string.format("%gx", self.value), 22, "#FFFFFF", self.text_alpha,
++        string.format("%gx", self.value), 22, "#E6E0E9", self.text_alpha,
+         default_text_font)
+     end
+     return node
+@@ -413,12 +413,12 @@
+   local raw_speed = speed_min + clamp((pointer.x - box.x1) / box.w, 0, 1) * (speed_max - speed_min)
+   return clamp(math.floor(raw_speed * 100 + 0.5) / 100, speed_min, speed_max)
+ end
+-    node.header = ChapterHeader(on_back, "Playback Speed", "arrow_back", {
++    node.header = ChapterHeader(on_back, "播放速度", "arrow_back", {
+       name = "playback-speed-temporary",
+       icon = "bolt_boost",
+       tooltip = function()
+         return string.format(
+-          "Temporary %gx", tonumber(services.config.temporary_speed()) or 2)
++          "临时 %gx", tonumber(services.config.temporary_speed()) or 2)
+       end,
+       shortcut = "temporary-speed",
+       on_press = function() temporary_speed:activate() end,
+@@ -427,14 +427,14 @@
+     node.decrease = ChapterCloseButton({
+       name = "playback-speed-decrease",
+       icon = "remove",
+-      tooltip = "Decrease Speed",
++      tooltip = "减速",
+       shortcut = "speed-down",
+       on_click = function() adjust_speed(-speed_step) end
+     })
+     node.increase = ChapterCloseButton({
+       name = "playback-speed-increase",
+       icon = "add",
+-      tooltip = "Increase Speed",
++      tooltip = "加速",
+       shortcut = "speed-up",
+       on_click = function() adjust_speed(speed_step) end
+     })
+@@ -475,7 +475,7 @@
+       end
+       if gap_right < bounds.x2 then
+         draw_rect(ass, gap_right, track_y - track_h / 2, bounds.x2,
+-          track_y + track_h / 2, "#282828", "99")
++          track_y + track_h / 2, "#2B2930", "99")
+       end
+       local hovering = mouse_in(bounds)
+       local handle_h = dp(hovering and 24 or 22)
+@@ -512,10 +512,10 @@
+     end
+     function node:draw(ass, bounds)
+       draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-        dp(30), "#050708", self.panel_alpha)
++        dp(30), "#211F26", "00")
+       draw_node(self.header, ass, Rect({x = bounds.x, y = bounds.y, w = bounds.w, h = dp(56)}))
+       draw_text(ass, bounds.x + bounds.w / 2, bounds.y + dp(82),
+-        string.format("%.2fx", self.speed), 24, "#FFFFFF", self.text_alpha,
++        string.format("%.2fx", self.speed), 24, "#E6E0E9", self.text_alpha,
+         default_text_font)
+       local slider_y, button_size = bounds.y + dp(98), dp(36)
+       draw_node(self.decrease, ass, Rect({
+@@ -570,7 +570,7 @@
+     temp_dir = filesystem:join(temp_dir, "material-osc")
+     temp_dir = filesystem:join(temp_dir, "thumbnails")
+     if not filesystem:ensure_directory(temp_dir) then
+-      msg.error("Could not create image thumbnail directory: " .. temp_dir)
++      msg.error("无法创建缩略图目录：" .. temp_dir)
+       return
+     end
+     local video_title = mp.get_property("media-title") or "video"
+@@ -581,7 +581,7 @@
+       "%s-%s.png", video_title, tostring(item.id)))
+     local video_index = tonumber(item.video_index)
+     if video_index == nil then
+-      msg.error("Cannot open image track: video stream index is unavailable")
++      msg.error("无法打开图像轨道：视频流索引不可用")
+       return
+     end
+ 
+@@ -590,18 +590,18 @@
+         "-map", "0:v:" .. tostring(video_index), "-frames:v", "1",
+         "-f", "image2", output}, nil, function(success, result)
+       if not success then
+-        msg.error("Could not extract image track: " ..
+-          tostring(result and result.stderr or "unknown subprocess error"))
++        msg.error("无法提取图像轨道：" ..
++          tostring(result and result.stderr or "未知子进程错误"))
+         return
+       end
+       local info = filesystem:info(output)
+       if not info or not info.is_file or (tonumber(info.size) or 0) <= 0 then
+-        msg.error("FFmpeg finished without creating the image: " .. output)
++        msg.error("FFmpeg 未生成图像：" .. output)
+         return
+       end
+       filesystem:open(output, nil, function(open_success)
+         if not open_success then
+-          msg.error("Could not launch the system image viewer")
++          msg.error("无法启动系统图片查看器")
+         end
+       end)
+     end)
+@@ -637,10 +637,10 @@
+       function item:draw(ass, bounds)
+         if node.interactive and mouse_in(bounds) then
+           draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-            bounds.h / 2, "#FFFFFF", node.hover_alpha)
++            bounds.h / 2, "#E6E0E9", node.hover_alpha)
+         end
+         draw_text(ass, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2,
+-          self.text, 26, "#FFFFFF", node.text_alpha, default_text_font)
++          self.text, 26, "#E6E0E9", node.text_alpha, default_text_font)
+       end
+       return item
+     end
+@@ -658,7 +658,7 @@
+     function node:measure(parent) return {w = parent.w, h = dp(44)} end
+     function node:draw(ass, bounds)
+       draw_text(ass, bounds.x + dp(16), bounds.y + bounds.h / 2,
+-        self.label, 21, "#FFFFFF", self.text_alpha, default_text_font, 4)
++        self.label, 21, "#E6E0E9", self.text_alpha, default_text_font, 4)
+       local plus = Rect({x = bounds.x2 - dp(42), y = bounds.y + dp(5), w = dp(34), h = dp(34)})
+       local minus = Rect({x = plus.x - dp(42), y = plus.y, w = dp(34), h = dp(34)})
+       draw_text(ass, minus.x - dp(8), bounds.y + bounds.h / 2,
+@@ -670,11 +670,11 @@
+   end
+ 
+   local subtitle_colors = {
+-    {name = "White", value = "#FFFFFFFF"},
+-    {name = "Yellow", value = "#FFFFFF00"},
+-    {name = "Cyan", value = "#FF00FFFF"},
+-    {name = "Green", value = "#FF80FF80"},
+-    {name = "Pink", value = "#FFFFB0D8"}
++    {name = "白色", value = "#FFFFFFFF"},
++    {name = "黄色", value = "#FFFFFF00"},
++    {name = "青色", value = "#FF00FFFF"},
++    {name = "绿色", value = "#FF80FF80"},
++    {name = "粉色", value = "#FFFFB0D8"}
+   }
+   local subtitle_fonts = {"sans-serif", "Google Sans Flex", "serif", "monospace"}
+ 
+@@ -709,34 +709,34 @@
+       mp.set_property("sub-color", "#FFFFFFFF")
+       mp.set_property("sub-font", "sans-serif")
+     end
+-    node.header = ChapterHeader(on_back, "Subtitle Settings", "arrow_back", {
++    node.header = ChapterHeader(on_back, "字幕设置", "arrow_back", {
+       name = "subtitle-style-reset",
+       icon = "restart_alt",
+-      tooltip = "Reset Subtitle Settings",
++      tooltip = "重置字幕设置",
+       on_click = reset_subtitle_style
+     })
+-    node.delay = SubtitleAdjustRow("subtitle-delay", "Timing", 
++    node.delay = SubtitleAdjustRow("subtitle-delay", "计时", 
+       function()
+         mp.set_property_number("sub-delay", clamp(node.delay_value - 0.1, -10, 10))
+       end,
+       function()
+         mp.set_property_number("sub-delay", clamp(node.delay_value + 0.1, -10, 10))
+       end)
+-    node.font_size_row = SubtitleAdjustRow("subtitle-font-size", "Font size",
++    node.font_size_row = SubtitleAdjustRow("subtitle-font-size", "字号",
+       function()
+         mp.set_property_number("sub-font-size", clamp(node.font_size - 2, 10, 120))
+       end,
+       function()
+         mp.set_property_number("sub-font-size", clamp(node.font_size + 2, 10, 120))
+       end)
+-    node.border = SubtitleAdjustRow("subtitle-border", "Border",
++    node.border = SubtitleAdjustRow("subtitle-border", "边框",
+       function()
+         mp.set_property_number("sub-outline-size", clamp(node.border_size - 0.5, 0, 10))
+       end,
+       function()
+         mp.set_property_number("sub-outline-size", clamp(node.border_size + 0.5, 0, 10))
+       end)
+-    node.color_row = SubtitleAdjustRow("subtitle-color", "Color",
++    node.color_row = SubtitleAdjustRow("subtitle-color", "颜色",
+       function()
+         local item = cycle_option(subtitle_colors, normalize_subtitle_color(node.color), -1,
+           function(v) return v.value end)
+@@ -747,7 +747,7 @@
+           function(v) return v.value end)
+         mp.set_property("sub-color", item.value)
+       end)
+-    node.font_row = SubtitleAdjustRow("subtitle-font", "Font",
++    node.font_row = SubtitleAdjustRow("subtitle-font", "字体",
+       function()
+         mp.set_property("sub-font", cycle_option(subtitle_fonts, node.font, -1, function(v) return v end))
+       end,
+@@ -777,7 +777,7 @@
+     end
+     function node:draw(ass, bounds)
+       draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-        dp(30), "#050708", self.panel_alpha)
++        dp(30), "#211F26", "00")
+       draw_node(self.header, ass, Rect({x = bounds.x, y = bounds.y, w = bounds.w, h = dp(56)}))
+       local rows = {self.delay, self.font_size_row, self.border, self.color_row, self.font_row}
+       local y = bounds.y + dp(60)
+@@ -791,9 +791,9 @@
+   end
+ 
+   local crop_presets = {
+-    {label = "Original", value = "", mode = "original"},
+-    {label = "Stretch", value = "stretch", mode = "stretch"},
+-    {label = "Fit to Screen", value = "fit", mode = "fit"},
++    {label = "原始", value = "", mode = "original"},
++    {label = "拉伸", value = "stretch", mode = "stretch"},
++    {label = "适应屏幕", value = "fit", mode = "fit"},
+     {label = "16:9", value = "16:9", ratio = 16 / 9},
+     {label = "21:9", value = "21:9", ratio = 21 / 9},
+     {label = "4:3", value = "4:3", ratio = 4 / 3},
+@@ -826,7 +826,7 @@
+       if preset.value == selected then return preset.label end
+     end
+     value = tostring(value or "")
+-    return value == "" and "Original" or value
++    return value == "" and "原始" or value
+   end
+ 
+   local function apply_crop_preset(item)
+@@ -853,7 +853,7 @@
+     local width, height = tonumber(params.w), tonumber(params.h)
+     if not width or not height or width <= 0 or height <= 0 then
+       services.toast:error(
+-        "Video dimensions are unavailable", {duration = 2})
++        "无法获取视频尺寸", {duration = 2})
+       return
+     end
+     local pixel_aspect = 1
+@@ -893,7 +893,7 @@
+     function node:draw(ass, bounds)
+       local hovered = self.interactive and mouse_in(bounds)
+       draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-        bounds.h / 2, self.selected and opts.accent_color or "#FFFFFF",
++        bounds.h / 2, self.selected and "#4F378B" or "#E6E0E9",
+         self.selected and self.selected_alpha or (hovered and self.hover_alpha or "D8"))
+       local icon = self.item.icon
+       if icon then
+@@ -902,13 +902,13 @@
+         local group_width = icon_size + gap + label_width
+         local start_x = bounds.x + (bounds.w - group_width) / 2
+         draw_icon(ass, start_x + icon_size / 2,
+-          bounds.y + bounds.h / 2, icon, "#FFFFFF", 20, self.text_alpha)
++          bounds.y + bounds.h / 2, icon, "#E6E0E9", 20, self.text_alpha)
+         draw_text(ass, start_x + icon_size + gap, bounds.y + bounds.h / 2,
+-          self.item.label, 19, "#FFFFFF", self.text_alpha,
++          self.item.label, 19, "#E6E0E9", self.text_alpha,
+           default_text_font, 4)
+       else
+         draw_text(ass, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2,
+-          self.item.label, 19, "#FFFFFF", self.text_alpha,
++          self.item.label, 19, "#E6E0E9", self.text_alpha,
+           default_text_font, nil, false, false)
+       end
+     end
+@@ -923,10 +923,10 @@
+         name = "video-crop-panel", enabled = false, on_click = function() end
+       })
+     }
+-    node.header = ChapterHeader(on_back, "Crop", "arrow_back", {
++    node.header = ChapterHeader(on_back, "裁剪", "arrow_back", {
+       name = "video-crop-aspect-override",
+       icon = "aspect_ratio",
+-      tooltip = "Aspect Override",
++      tooltip = "宽高比覆盖",
+       on_click = function() set_settings_page("video_aspect") end
+     })
+     node.mode_pills, node.ratio_pills = {}, {}
+@@ -963,7 +963,7 @@
+     end
+     function node:draw(ass, bounds)
+       draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-        dp(30), "#050708", self.panel_alpha)
++        dp(30), "#211F26", "00")
+       draw_node(self.header, ass, Rect({x = bounds.x, y = bounds.y,
+         w = bounds.w, h = dp(56)}))
+       local inset, gap = dp(8), dp(8)
+@@ -986,7 +986,7 @@
+   end
+ 
+   local aspect_presets = {
+-    {label = "Original", value = "no"},
++    {label = "原始", value = "no"},
+     {label = "16:9", value = "16:9", ratio = 16 / 9},
+     {label = "21:9", value = "21:9", ratio = 21 / 9},
+     {label = "4:3", value = "4:3", ratio = 4 / 3},
+@@ -1013,7 +1013,7 @@
+     for _, preset in ipairs(aspect_presets) do
+       if preset.value == selected then return preset.label end
+     end
+-    return selected == "no" and "Original" or selected
++    return selected == "no" and "原始" or selected
+   end
+ 
+   local function apply_aspect_preset(item)
+@@ -1033,7 +1033,7 @@
+         name = "video-aspect-panel", enabled = false, on_click = function() end
+       })
+     }
+-    node.header = ChapterHeader(on_back, "Aspect Override", "arrow_back")
++    node.header = ChapterHeader(on_back, "宽高比覆盖", "arrow_back")
+     node.pills = {}
+     for index, preset in ipairs(aspect_presets) do
+       node.pills[index] = CropPill(
+@@ -1058,7 +1058,7 @@
+     end
+     function node:draw(ass, bounds)
+       draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-        dp(30), "#050708", self.panel_alpha)
++        dp(30), "#211F26", "00")
+       draw_node(self.header, ass, Rect({x = bounds.x, y = bounds.y,
+         w = bounds.w, h = dp(56)}))
+       local inset, gap = dp(8), dp(8)
+@@ -1098,12 +1098,12 @@
+       mp.set_property_number("saturation", 0)
+       mp.set_property_number("video-rotate", 0)
+     end
+-    node.header = ChapterHeader(on_back, "Video Settings", "arrow_back", {
++    node.header = ChapterHeader(on_back, "视频设置", "arrow_back", {
+       name = "video-settings-reset", icon = "restart_alt",
+-      tooltip = "Reset Video Settings",
++      tooltip = "重置视频设置",
+       on_click = reset_video_settings
+     })
+-    node.gamma_row = SubtitleAdjustRow("video-settings-gamma", "Gamma",
++    node.gamma_row = SubtitleAdjustRow("video-settings-gamma", "伽马",
+       function()
+         mp.set_property_number("gamma", clamp(node.gamma - 5, -100, 100))
+       end,
+@@ -1111,7 +1111,7 @@
+         mp.set_property_number("gamma", clamp(node.gamma + 5, -100, 100))
+       end)
+     node.brightness_row = SubtitleAdjustRow(
+-      "video-settings-brightness", "Brightness",
++      "video-settings-brightness", "亮度",
+       function()
+         mp.set_property_number("brightness", clamp(node.brightness - 5, -100, 100))
+       end,
+@@ -1119,7 +1119,7 @@
+         mp.set_property_number("brightness", clamp(node.brightness + 5, -100, 100))
+       end)
+     node.contrast_row = SubtitleAdjustRow(
+-      "video-settings-contrast", "Contrast",
++      "video-settings-contrast", "对比度",
+       function()
+         mp.set_property_number("contrast", clamp(node.contrast - 5, -100, 100))
+       end,
+@@ -1127,14 +1127,14 @@
+         mp.set_property_number("contrast", clamp(node.contrast + 5, -100, 100))
+       end)
+     node.saturation_row = SubtitleAdjustRow(
+-      "video-settings-saturation", "Saturation",
++      "video-settings-saturation", "饱和度",
+       function()
+         mp.set_property_number("saturation", clamp(node.saturation - 5, -100, 100))
+       end,
+       function()
+         mp.set_property_number("saturation", clamp(node.saturation + 5, -100, 100))
+       end)
+-    node.rotation_row = SubtitleAdjustRow("video-settings-rotation", "Rotate",
++    node.rotation_row = SubtitleAdjustRow("video-settings-rotation", "旋转",
+       function()
+         mp.set_property_number("video-rotate", (node.rotation - 90) % 360)
+       end,
+@@ -1161,7 +1161,7 @@
+       self.saturation_row:update(common)
+       common.value = string.format("%d°", math.floor(self.rotation + 0.5) % 360)
+       self.rotation_row:update(common)
+-      common.label, common.value = "Shaders", tostring(self.shader_count)
++      common.label, common.value = "着色器", tostring(self.shader_count)
+       self.shaders_row:update(common)
+     end
+     function node:measure(parent)
+@@ -1169,7 +1169,7 @@
+     end
+     function node:draw(ass, bounds)
+       draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-        dp(30), "#050708", self.panel_alpha)
++        dp(30), "#211F26", "00")
+       draw_node(self.header, ass, Rect({x = bounds.x, y = bounds.y,
+         w = bounds.w, h = dp(56)}))
+       local rows = {
+@@ -1194,7 +1194,7 @@
+         name = "settings-dialog-panel", enabled = false, on_click = function() end
+       })
+     }
+-    node.header = ChapterHeader(on_close, "Settings")
++    node.header = ChapterHeader(on_close, "设置")
+     node.video_row = SettingsActionRow("settings-video-row", "videocam",
+       function() set_settings_page("video") end)
+     node.audio_row = SettingsActionRow("settings-audio-row", "record_voice_over",
+@@ -1206,10 +1206,10 @@
+     node.speed_row = SettingsActionRow("settings-speed-row", "speed",
+       function() set_settings_page("speed") end)
+     node.video = TrackPopup(function() set_settings_page("root") end, {
+-      name = "settings-video", title = "Video", action_icon = "arrow_back",
++      name = "settings-video", title = "视频", action_icon = "arrow_back",
+       right_action = {
+         name = "settings-video-options", icon = "tune",
+-        tooltip = "Video Settings",
++        tooltip = "视频设置",
+         on_click = function() set_settings_page("video_settings") end
+       },
+       state = settings_state,
+@@ -1224,7 +1224,7 @@
+       end
+     })
+     node.audio = TrackPopup(function() set_settings_page("root") end, {
+-      name = "settings-audio", title = "Audio", action_icon = "arrow_back",
++      name = "settings-audio", title = "音频", action_icon = "arrow_back",
+       state = settings_state,
+       on_select = function(item)
+         if item.id == 0 then mp.set_property("aid", "no")
+@@ -1232,21 +1232,21 @@
+       end
+     })
+     node.subtitles = TrackPopup(function() set_settings_page("root") end, {
+-      name = "settings-subtitles", title = "Subtitles", action_icon = "arrow_back",
++      name = "settings-subtitles", title = "字幕", action_icon = "arrow_back",
+       footer = {label = "Add", icon = "add", on_click = open_subtitle_file_picker},
+-      secondary_footer = {label = "Link", icon = "link",
++      secondary_footer = {label = "链接", icon = "link",
+         on_click = open_subtitle_link_picker},
+       right_action = {
+         {
+           name = "settings-secondary-subtitles",
+           icon = "filter_2",
+-          tooltip = "Secondary Subtitles",
++          tooltip = "第二字幕",
+           on_click = function() set_settings_page("secondary_subtitles") end
+         },
+         {
+           name = "settings-subtitles-style",
+           icon = "subtitles_gear",
+-          tooltip = "Subtitle Settings",
++          tooltip = "字幕设置",
+           on_click = function() set_settings_page("subtitle_style") end
+         }
+       },
+@@ -1263,11 +1263,11 @@
+       end
+     })
+     node.secondary_subtitles = TrackPopup(function() set_settings_page("subtitles") end, {
+-      name = "settings-secondary-subtitles", title = "Secondary Subtitle",
++      name = "settings-secondary-subtitles", title = "第二字幕",
+       action_icon = "arrow_back", state = settings_state,
+       footer = {label = "Add", icon = "add",
+         on_click = open_secondary_subtitle_file_picker},
+-      secondary_footer = {label = "Link", icon = "link",
++      secondary_footer = {label = "链接", icon = "link",
+         on_click = open_secondary_subtitle_link_picker},
+       on_select = function(item)
+         if item.id == 0 then
+@@ -1279,7 +1279,7 @@
+       end
+     })
+     node.auto_captions = TrackPopup(function() set_settings_page("subtitles") end, {
+-      name = "settings-auto-captions", title = "Auto Captions",
++      name = "settings-auto-captions", title = "自动字幕",
+       action_icon = "arrow_back", state = settings_state,
+       on_select = function(item)
+         attach_ytdl_caption(item)
+@@ -1298,14 +1298,14 @@
+     node.video_shaders = TrackPopup(function()
+       set_settings_page("video_settings")
+     end, {
+-      name = "settings-video-shaders", title = "Shaders", action_icon = "arrow_back",
++      name = "settings-video-shaders", title = "着色器", action_icon = "arrow_back",
+       state = settings_state,
+       footer = {label = "Add", icon = "add", on_click = open_shader_file_picker},
+-      secondary_footer = {label = "Link", icon = "link",
++      secondary_footer = {label = "链接", icon = "link",
+         on_click = open_shader_link_picker},
+       right_action = {
+         name = "settings-video-shaders-clear", icon = "delete_sweep",
+-        tooltip = "Clear Shaders",
++        tooltip = "清除着色器",
+         on_click = clear_shaders
+       },
+       is_selected = function() return false end,
+@@ -1337,25 +1337,25 @@
+         title_alpha = ass_alpha_for_opacity((self.opacity or 0) * 0.70),
+         hover_alpha = self.hover_alpha,
+         interactive = self.interactive})
+-      common.label, common.value = "Video (" ..
++      common.label, common.value = "视频 (" ..
+         tostring(self.video_track_count or #self.video_items) .. ")",
+-        selected_track_label(self.video_items, self.video_id, "None")
++        selected_track_label(self.video_items, self.video_id, "无")
+       self.video_row:update(common)
+-      common.label, common.value = "Audio (" ..
++      common.label, common.value = "音频 (" ..
+         math.max(0, #self.audio_items - 1) .. ")",
+-        selected_track_label(self.audio_items, self.audio_id, "None")
++        selected_track_label(self.audio_items, self.audio_id, "无")
+       self.audio_row:update(common)
+-      common.label, common.value = "Subtitles (" ..
++      common.label, common.value = "字幕 (" ..
+         tostring(self.subtitle_track_count or math.max(0, #self.subtitle_items - 1)) .. ")",
+-        selected_track_label(self.subtitle_items, self.subtitle_id, "Off")
++        selected_track_label(self.subtitle_items, self.subtitle_id, "关闭")
+       self.subtitle_row:update(common)
+-      common.label = "Crop"
++      common.label = "裁剪"
+       common.value = self.video_aspect_selected ~= "no" and
+-        ("Aspect " .. aspect_label(self.video_aspect_override)) or
++        ("宽高比 " .. aspect_label(self.video_aspect_override)) or
+         crop_label(self.video_crop_value, self.video_keepaspect,
+           self.video_panscan)
+       self.crop_row:update(common)
+-      common.label, common.value = "Playback Speed", string.format("%gx", self.speed_value)
++      common.label, common.value = "播放速度", string.format("%gx", self.speed_value)
+       self.speed_row:update(common)
+       local page_props = {
+         interactive = self.interactive, panel_alpha = self.panel_alpha,
+@@ -1456,7 +1456,7 @@
+         return
+       end
+       draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2,
+-        dp(30), "#050708", self.panel_alpha)
++        dp(30), "#211F26", "00")
+       push_clip(bounds)
+       draw_node(self.header, ass, Rect({x = bounds.x, y = bounds.y, w = bounds.w, h = dp(56)}))
+       local y = bounds.y + dp(64)
+diff -ruN a/src/ui/components/seekbar_renderer.lua b/src/ui/components/seekbar_renderer.lua
+--- a/src/ui/components/seekbar_renderer.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/ui/components/seekbar_renderer.lua	2026-11-09 20:54:30.392180260 +0800
+@@ -43,21 +43,21 @@
+     local pill_y2 = seek_y - dp(12)
+     local pill_x1 = center_x - pill_w / 2
+     draw_box(ass, pill_x1, pill_y2 - pill_h, pill_x1 + pill_w, pill_y2,
+-      pill_h / 2, "#050708", "33")
++      pill_h / 2, "#211F26", "00")
+     draw_text(ass, center_x, pill_y2 - pill_h / 2, time_text, text_size,
+-      "#FFFFFF")
++      "#E6E0E9")
+ 
+     -- close button: finishes precise seeking at the current position
+     local close = {x1 = x2 - pill_h, y1 = pill_y2 - pill_h, x2 = x2, y2 = pill_y2}
+     precise.close_bounds = close
+     draw_box(ass, close.x1, close.y1, close.x2, close.y2, pill_h / 2,
+-      "#050708", "14")
++      "#211F26", "14")
+     if mouse_in(close) then
+       draw_box(ass, close.x1, close.y1, close.x2, close.y2, pill_h / 2,
+-        "#FFFFFF", "D6")
++        "#E6E0E9", "D6")
+     end
+     draw_icon(ass, (close.x1 + close.x2) / 2, (close.y1 + close.y2) / 2,
+-      "close", "#FFFFFF", 20, "00")
++      "close", "#E6E0E9", 20, "00")
+ 
+     -- filmstrip, framed like the seek preview thumbnail
+     local area = precise.strip_bounds
+@@ -65,13 +65,13 @@
+     local strip = {x1 = x1, x2 = x2, y1 = area.y + dp(10), y2 = area.y2 - dp(2)}
+     precise.strip_area = strip
+     local strip_h = math.floor(strip.y2 - strip.y1)
+-    draw_box(ass, strip.x1, strip.y1, strip.x2, strip.y2, 0, "#050708", "20")
++    draw_box(ass, strip.x1, strip.y1, strip.x2, strip.y2, 0, "#211F26", "20")
+     if not precise_strip or runtime.snapshot.network or
+       not precise_strip:available() then
+       draw_text(ass, center_x, (strip.y1 + strip.y2) / 2,
+-        "Filmstrip is available for local files", 15, "#CAC4D0")
++        "仅本地文件支持胶片预览", 15, "#CAC4D0")
+       draw_box(ass, center_x - dp(1), strip.y1 - dp(4), center_x + dp(1),
+-        strip.y2 + dp(4), 0, "#FFFFFF", "00")
++        strip.y2 + dp(4), 0, "#E6E0E9", "00")
+       return
+     end
+     local tile_w = math.max(math.floor(strip_h * precise_strip:aspect() + 0.5),
+@@ -87,7 +87,7 @@
+         local tx1 = math.max(tile.x1, strip.x1)
+         local tx2 = math.min(tile.x2, strip.x2)
+         if tx2 > tx1 then
+-          draw_box(ass, tx1, strip.y1, tx2, strip.y2, 0, "#282828", "99")
++          draw_box(ass, tx1, strip.y1, tx2, strip.y2, 0, "#2B2930", "00")
+         end
+       end
+     end
+@@ -106,7 +106,7 @@
+     if seek_w < dp(80) then return end
+   
+     if duration <= 0 then
+-      draw_rect(ass, x1, seek_y, x2, seek_y + seek_h, "#282828", "99")
++      draw_rect(ass, x1, seek_y, x2, seek_y + seek_h, "#2B2930", "00")
+       return
+     end
+   
+@@ -159,7 +159,7 @@
+       return segments
+     end
+ 
+-    draw_boxes(ass, track_segments(x1, x2), "#282828", "99")
++    draw_boxes(ass, track_segments(x1, x2), "#2B2930", "00")
+   
+     if runtime.snapshot.network then
+       local cache_state = runtime.snapshot.cache_state or {}
+@@ -175,7 +175,7 @@
+           end
+         end
+       end
+-      draw_boxes(ass, cache_segments, "#b1b1b1", "66")
++      draw_boxes(ass, cache_segments, "#CAC4D0", "66")
+     end
+   
+     draw_boxes(ass, track_segments(x1, handle_x), opts.accent_color, "00")
+diff -ruN a/src/ui/components/temporary_speed_indicator.lua b/src/ui/components/temporary_speed_indicator.lua
+--- a/src/ui/components/temporary_speed_indicator.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/ui/components/temporary_speed_indicator.lua	2026-11-09 20:17:45.836121493 +0800
+@@ -21,13 +21,13 @@
+     local x1, x2 = center_x - pill_w / 2, center_x + pill_w / 2
+     local y1, y2 = center_y - pill_h / 2, center_y + pill_h / 2
+     ui.draw_box(ass, x1, y1, x2, y2, pill_h / 2,
+-      "#050708", ui.alpha(0.94), true)
++      "#211F26", ui.alpha(1), true)
+     local text_x = x1 + pad_x
+     ui.draw_text(ass, text_x, y1 + pill_h / 2, label, text_size,
+-      "#FFFFFF", "00", ui.default_text_font, 4, true, true)
++      "#E6E0E9", "00", ui.default_text_font, 4, true, true)
+     local icon_x = text_x + label_w + gap + icon_size / 2
+     ui.draw_icon(ass, icon_x, center_y, "bolt_boost",
+-      "#FFFFFF", 22, "00", true)
++      "#E6E0E9", 22, "00", true)
+   end
+ 
+   return node
+diff -ruN a/src/ui/components/update_dialog.lua b/src/ui/components/update_dialog.lua
+--- a/src/ui/components/update_dialog.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/ui/components/update_dialog.lua	2026-11-09 20:19:05.510605183 +0800
+@@ -12,17 +12,17 @@
+       modifier = Modifier():clickable({name = name, on_click = on_click}):hoverIndication(),
+       label = label, filled = filled
+     }
+-    function node:measure() return {w = dp(label == "Cancel" and 92 or 104), h = dp(42)} end
++    function node:measure() return {w = dp(label == "取消" and 92 or 104), h = dp(42)} end
+     function node:draw(ass, bounds)
+       if self.filled then
+         draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2, bounds.h / 2,
+           services.config.opts.accent_color, "00", true)
+       elseif mouse_in(bounds) then
+         draw_box(ass, bounds.x, bounds.y, bounds.x2, bounds.y2, bounds.h / 2,
+-          "#FFFFFF", "DD", true)
++          "#E6E0E9", "DD", true)
+       end
+       draw_text(ass, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2,
+-        self.label, 20, self.filled and "#001F28" or "#FFFFFF", "00",
++        self.label, 20, self.filled and "#2B2930" or "#E6E0E9", "00",
+         ui.default_text_font, 5, false, true)
+     end
+     return node
+@@ -53,9 +53,9 @@
+       services.effects.render()
+     end
+   })
+-  node.cancel = action("update-dialog-cancel", "Cancel", function() updater:close() end, false)
+-  node.install = action("update-dialog-install", "Update", function() updater:install(false) end, true)
+-  node.okay = action("update-dialog-okay", "Okay", function() updater:close() end, true)
++  node.cancel = action("update-dialog-cancel", "取消", function() updater:close() end, false)
++  node.install = action("update-dialog-install", "更新", function() updater:install(false) end, true)
++  node.okay = action("update-dialog-okay", "确定", function() updater:close() end, true)
+ 
+   function node:update() end
+   function node:measure(parent) return {w = parent.w, h = parent.h} end
+@@ -99,7 +99,7 @@
+     local height = math.max(dp(300), math.min(dp(430), bounds.h - dp(32)))
+     local panel = Rect({x = bounds.x + (bounds.w - width) / 2,
+       y = bounds.y + (bounds.h - height) / 2, w = width, h = height})
+-    draw_box(ass, panel.x, panel.y, panel.x2, panel.y2, dp(28), "#111416", "00", true)
++    draw_box(ass, panel.x, panel.y, panel.x2, panel.y2, dp(28), "#211F26", "00", true)
+     local padding, gap = dp(8), dp(8)
+     local release_size = dp(34)
+     local release_bounds = Rect({
+@@ -111,15 +111,15 @@
+     if mouse_in(release_bounds) then
+       draw_box(ass, release_bounds.x, release_bounds.y,
+         release_bounds.x2, release_bounds.y2, release_bounds.h / 2,
+-        "#FFFFFF", "DD", true)
++        "#E6E0E9", "DD", true)
+     end
+     draw_icon(ass, release_bounds.x + release_bounds.w / 2,
+       release_bounds.y + release_bounds.h / 2,
+-      "open_in_new", "#FFFFFF", 20, "00", true)
++      "open_in_new", "#E6E0E9", 20, "00", true)
+     local header_y, header_h = panel.y + padding, dp(42)
+     local header_center_y = header_y + header_h / 2
+-    local header_text = state.done and "material-osc updated" or
+-      "material-osc update available"
++    local header_text = state.done and "material-osc 已更新" or
++      "material-osc 有可用更新"
+     local header_version = tostring(state.version or "")
+     local header_separator = header_version == "" and "" or " · "
+     local header_icon_size = dp(22)
+@@ -130,22 +130,22 @@
+       header_separator_width + header_version_width
+     local header_x = panel.x + (panel.w - header_group_width) / 2
+     draw_icon(ass, header_x + header_icon_size / 2, header_center_y,
+-      state.done and "check_circle" or "system_update_alt", "#FFFFFF",
++      state.done and "check_circle" or "system_update_alt", "#E6E0E9",
+       22, "00", true)
+     draw_text(ass, header_x + header_icon_size + gap, header_center_y,
+-      header_text, 25, "#FFFFFF", "00", ui.default_text_font, 4, false, true)
++      header_text, 25, "#E6E0E9", "00", ui.default_text_font, 4, false, true)
+     if header_version ~= "" then
+       local suffix_x = header_x + header_icon_size + gap + header_text_width
+       draw_text(ass, suffix_x, header_center_y, header_separator, 25,
+-        "#FFFFFF", "00", ui.default_text_font, 4, false, true)
++        "#E6E0E9", "00", ui.default_text_font, 4, false, true)
+       draw_text(ass, suffix_x + header_separator_width, header_center_y,
+         header_version, 25,
+-        "#FFFFFF", "00", ui.default_text_font, 4, true, true)
++        "#E6E0E9", "00", ui.default_text_font, 4, true, true)
+       local underline_x = suffix_x + header_separator_width
+       local underline_y = header_center_y + dp(14)
+       draw_box(ass, underline_x, underline_y,
+         underline_x + header_version_width, underline_y + dp(1.5),
+-        dp(0.75), "#FFFFFF", "00", true)
++        dp(0.75), "#E6E0E9", "00", true)
+     end
+ 
+     local button_h = dp(42)
+@@ -177,7 +177,7 @@
+     for index = state.scroll_index + 1, last_line do
+       draw_text(ass, note_bounds.x, note_y +
+         (index - state.scroll_index - 1) * line_height, lines[index], note_size,
+-        state.error and "#FFB4AB" or "#E2E2E6", "00", ui.default_text_font, 7,
++        state.error and "#FFB4AB" or "#E6E0E9", "00", ui.default_text_font, 7,
+         false, true, note_bounds)
+     end
+     if node.max_scroll > 0 then
+@@ -187,7 +187,7 @@
+       local thumb_y = note_bounds.y + (track_h - thumb_h) *
+         state.scroll_index / node.max_scroll
+       draw_box(ass, track_x, note_bounds.y, track_x + dp(3), note_bounds.y2,
+-        dp(1.5), "#FFFFFF", "D8", true)
++        dp(1.5), "#E6E0E9", "D8", true)
+       draw_box(ass, track_x, thumb_y, track_x + dp(3), thumb_y + thumb_h,
+         dp(1.5), "#CAC4D0", "44", true)
+     end
+@@ -205,17 +205,17 @@
+       local box_y = toggle_bounds.y + (toggle_bounds.h - box_size) / 2
+       local checked = state.done and state.disable_auto_update or state.dont_ask
+       draw_box(ass, box_x, box_y, box_x + box_size, box_y + box_size, dp(5),
+-        checked and services.config.opts.accent_color or "#111416", "00", true)
++        checked and services.config.opts.accent_color or "#211F26", "00", true)
+       if not checked then
+         draw_box(ass, box_x, box_y, box_x + box_size, box_y + box_size, dp(5),
+           "#CAC4D0", "88", true)
+       else
+         draw_icon(ass, box_x + box_size / 2, box_y + box_size / 2,
+-          "check", "#001F28", 18, "00", true)
++          "check", "#2B2930", 18, "00", true)
+       end
+       draw_text(ass, box_x + box_size + gap, toggle_bounds.y + toggle_bounds.h / 2,
+-        state.done and "Disable automatic updates" or "Don’t ask again",
+-        20, "#FFFFFF", "00", ui.default_text_font, 4, false, true)
++        state.done and "禁用自动更新" or "Don’t ask again",
++        20, "#E6E0E9", "00", ui.default_text_font, 4, false, true)
+     end
+ 
+     if state.done then
+@@ -228,7 +228,7 @@
+       local cancel_bounds = Rect({x = cancel_x, y = button_y,
+         w = cancel_w, h = button_h})
+       self.install.modifier.pointer_enabled = not state.busy
+-      self.install.label = state.busy and "Updating…" or "Update"
++      self.install.label = state.busy and "Updating…" or "更新"
+       ui.draw_node(self.cancel, ass, cancel_bounds)
+       ui.draw_node(self.install, ass, install_bounds)
+     end
+diff -ruN a/src/ui/compose.lua b/src/ui/compose.lua
+--- a/src/ui/compose.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/ui/compose.lua	2026-11-09 21:01:04.597863312 +0800
+@@ -157,7 +157,7 @@
+ 
+     function modifier:hoverIndication(args)
+       self.hover_indication = true
+-      self.hover_color = args and args.color or "#FFFFFF"
++      self.hover_color = args and args.color or "#E6E0E9"
+       self.hover_alpha = args and args.alpha or "E6"
+       self.hover_inset = args and args.inset or dp(0)
+       return self
+@@ -311,7 +311,7 @@
+   local function IconButton(args)
+     local node = {
+       icon = args.icon,
+-      icon_color = args.icon_color or "#FFFFFF",
++      icon_color = args.icon_color or "#E6E0E9",
+       hover_icon_color = args.hover_icon_color,
+       transition_icon = args.transition_icon,
+       transition_progress = args.transition_progress or 0,
+@@ -419,7 +419,7 @@
+     local node = {
+       text = args.text or "",
+       size = args.size or normal_text_size,
+-      color = args.color or "#FFFFFF",
++      color = args.color or "#E6E0E9",
+       alpha = args.alpha,
+       tooltip = args.tooltip,
+       alignment = args.alignment,
+@@ -580,8 +580,8 @@
+     local modifier = args.modifier or Modifier()
+     if not args.no_background and not modifier.background_color then
+       modifier:background({
+-        color = args.background_color or "#050708",
+-        alpha = args.background_alpha or "58",
++        color = args.background_color or "#211F26",
++        alpha = args.background_alpha or "00",
+         shape = RoundedCornerShape({percent = 50})
+       })
+     end
+@@ -610,10 +610,10 @@
+     local node = {
+       primary = args.primary,
+       secondary = args.secondary,
+-      primary_color = args.primary_color or "#050708",
+-      primary_alpha = args.primary_alpha or "58",
+-      secondary_color = args.secondary_color or "#b1b1b1",
+-      secondary_alpha = args.secondary_alpha or "66",
++      primary_color = args.primary_color or "#211F26",
++      primary_alpha = args.primary_alpha or "00",
++      secondary_color = args.secondary_color or "#2B2930",
++      secondary_alpha = args.secondary_alpha or "00",
+       modifier = args.modifier or Modifier():drawBehindInteraction(false)
+     }
+ 
+diff -ruN a/src/ui/renderer.lua b/src/ui/renderer.lua
+--- a/src/ui/renderer.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/ui/renderer.lua	2026-11-09 21:01:04.593966254 +0800
+@@ -253,7 +253,7 @@
+     ass:append(string.format(
+       "{\\bord0\\shad0\\fs%d\\fn%s%s%s\\1c&H%s&\\1a&H%s&}",
+       self:scale_font(size or 22), font or self.default_text_font,
+-      font_weight, typography, self:ass_color(color or "#FFFFFF"),
++      font_weight, typography, self:ass_color(color or "#E6E0E9"),
+       rendered_alpha))
+     append_clip(ass, clip_bounds)
+     ass:append(escape_ass(value))
+diff -ruN a/src/ui/text_metrics.lua b/src/ui/text_metrics.lua
+--- a/src/ui/text_metrics.lua	2026-11-09 05:56:26.000000000 +0800
++++ b/src/ui/text_metrics.lua	2026-11-09 21:01:04.595930152 +0800
+@@ -197,7 +197,7 @@
+   if COMMON_ADVANCES[value] then return COMMON_ADVANCES[value] end
+   -- Unsupported scripts are rendered through a fallback font, whose exact
+   -- metrics are not knowable here.  Preserve conservative estimates for them.
+-  if is_wide(value) then return 2485 end
++  if is_wide(value) then return 3480 end
+   return 1392
+ end
+ 
