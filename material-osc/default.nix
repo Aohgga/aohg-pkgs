@@ -36,8 +36,9 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   installPhase = ''
     runHook preInstall
     install -Dm644 build/0.0.14/scripts/material-osc.lua \
-      $out/share/mpv/scripts/material-osc.lua
-    install -Dm644 build/0.0.14/fonts/* -t $out/share/mpv/fonts
+      $out/share/mpv/scripts/material-osc/main.lua
+    install -Dm644 build/0.0.14/fonts/* \
+      -t $out/share/mpv/scripts/material-osc/fonts
     runHook postInstall
   '';
 
