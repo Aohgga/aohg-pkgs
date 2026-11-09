@@ -76,8 +76,10 @@ nix fmt        # 使用 nixfmt-rfc-style 格式化本仓库
 ### `material-osc`
 
 固定上游 `main` 的某个 commit，应用 `material-osc-md3e.patch` 后
-用上游的 `bundle.py`（python + fonttools）重新打包，输出与上游
-release 相同的 `scripts/material-osc.lua` 与 `fonts/`。
+用上游的 `bundle.py`（python + fonttools）重新打包。脚本安装为
+`share/mpv/scripts/material-osc/main.lua`，字体放在同目录的 `fonts/`
+下并由脚本自行加载，和其他 mpv 脚本一样直接加入 `programs.mpv.scripts`
+即可，不需要额外的字体链接或 home-manager 模块。
 
 补丁相对上游的改动：
 
