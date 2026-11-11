@@ -15,6 +15,8 @@
       bilibili-mpv          = pkgs.callPackage ./bilibili-mpv {};
       material-osc          = pkgs.callPackage ./material-osc {};
       miku-cursors          = pkgs.callPackage ./miku-cursors {};
+      unifontexmono         = pkgs.callPackage ./unifontexmono {};
+      wqy-bitmap-song       = pkgs.callPackage ./wqy-bitmap-song {};
     };
   in {
     overlays.default = final: prev: {
@@ -24,6 +26,8 @@
       bilibili-mpv = final.callPackage ./bilibili-mpv {};
       material-osc = final.callPackage ./material-osc {};
       miku-cursors = final.callPackage ./miku-cursors {};
+      unifontexmono = final.callPackage ./unifontexmono {};
+      wqy-bitmap-song = final.callPackage ./wqy-bitmap-song {};
     };
 
     packages = forAllSystems (system:

@@ -11,6 +11,8 @@ Aohg 的个人 Nix 包集合。nixpkgs 中没有的包（或需要自定义补�
 | `bilibili-mpv` | MPV 的 B 站弹幕/评论脚本 | [itKelis/MPV-Play-BiliBili-Comments](https://github.com/itKelis/MPV-Play-BiliBili-Comments) |
 | `material-osc` | mpv 的 Material Design OSC，MD3E 不透明配色 + 中文界面 | [brahmkshatriya/material-osc](https://github.com/brahmkshatriya/material-osc) |
 | `miku-cursors` | 初音未来光标主题（133 个光标） | [supermariofps/hatsune-miku-windows-linux-cursors](https://github.com/supermariofps/hatsune-miku-windows-linux-cursors) |
+| `unifontexmono` | GNU Unifont 的扩展分支，等宽点阵 | [stgiga/UnifontEX](https://github.com/stgiga/UnifontEX) |
+| `wqy-bitmap-song` | 文泉驿点阵宋体，10/11/12pt 三档 | [wenq.org](http://wenq.org/) |
 
 ## 使用方法
 
@@ -103,6 +105,8 @@ Unhinted TTF 变体，安装到 `$out/share/fonts/truetype` 下。
 - `bilibili-mpv` — GPL-3.0+
 - `maple-mono.NFPropo-CN` — 见上游字体许可证
 - `miku-cursors` — 上游未声明许可证（原作者已无法追溯），仅本仓库的打包代码为 MIT
+- `unifontexmono` — GPL-2.0+
+- `wqy-bitmap-song` — GPL-2.0+（含字体嵌入例外）
 
 本仓库中的打包代码（Nix 表达式）在未另行声明的情况下采用
 MIT 许可证。
