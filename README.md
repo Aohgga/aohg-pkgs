@@ -12,7 +12,7 @@ Aohg 的个人 Nix 包集合。nixpkgs 中没有的包（或需要自定义补�
 | `material-osc` | mpv 的 Material Design OSC，MD3E 不透明配色 + 中文界面 | [brahmkshatriya/material-osc](https://github.com/brahmkshatriya/material-osc) |
 | `miku-cursors` | 初音未来光标主题（133 个光标） | [supermariofps/hatsune-miku-windows-linux-cursors](https://github.com/supermariofps/hatsune-miku-windows-linux-cursors) |
 | `unifontexmono` | GNU Unifont 的扩展分支，等宽点阵 | [stgiga/UnifontEX](https://github.com/stgiga/UnifontEX) |
-| `wqy-bitmap-song` | 文泉驿点阵宋体，10/11/12pt 三档 | [wenq.org](http://wenq.org/) |
+| `wqy-bitmap-song` | 文泉驿点阵宋体，9/10/11/12pt 四档，cmap 修正为 Unicode | [wenq.org](http://wenq.org/) |
 
 ## 使用方法
 
